@@ -3,6 +3,8 @@ project(team6_object_follower)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  sensor_msgs
+  cv_bridge
   roscpp
   rospy
 )
@@ -10,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_python_setup()
 
 catkin_package(
-   CATKIN_DEPENDS geometry_msgs rospy
+   CATKIN_DEPENDS geometry_msgs sensor_msgs cv_bridge rospy
 )
 
 ## Build ##
@@ -22,6 +24,7 @@ target_link_libraries(rotate_robot ${catkin_LIBRARIES})
 ## Install ##
 catkin_install_python(PROGRAMS
   scripts/rotate_robot.py
+  scripts/find_object.py
   scripts/param_assistant.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
