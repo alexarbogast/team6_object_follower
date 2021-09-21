@@ -1,0 +1,4 @@
+<launch>
+    <node name="find_object" type="find_object.py" pkg="team6_object_follower"/>
+    <node name="rotate_robot" type="rotate_robot.py" pkg="team6_object_follower"/>
+</launch>

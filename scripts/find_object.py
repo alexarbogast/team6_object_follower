@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 import rospy
 import cv2
 
@@ -15,8 +15,8 @@ class ObjectFinder:
 
 		self.img_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage, self.callback)
 
-		self.debug_img_pub = rospy.Publisher("/output/image_raw/compressed", CompressedImage)
-		self.target_pub = rospy.Publisher("/target_loc", Point)
+		self.debug_img_pub = rospy.Publisher("/output/image_raw/compressed", CompressedImage, queue_size=1)
+		self.target_pub = rospy.Publisher("/target_loc", Point, queue_size=1)
 
 	def callback(self, data):
 		frame = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
@@ -26,8 +26,10 @@ class ObjectFinder:
 		self.debug_img_pub.publish(msg)
 
 		target = Point()
-		x, y = center
+		x, y = center if center is not None else (-1, -1)
+		
 		target.x, target.y, target.z = x, y, 0
+		
 		self.target_pub.publish(target)
 		print(target)
 
@@ -35,4 +37,3 @@ if __name__=='__main__':
 	rospy.init_node('find_object', anonymous=True)
 	of = ObjectFinder()
 	rospy.spin()
-	cv2.destroyAllWindows()
