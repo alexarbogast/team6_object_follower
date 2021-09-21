@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_camera_robot.launch"/>
+    <include file="$(find team6_object_follower)/launch/track_object.launch"/>
+</launch>
