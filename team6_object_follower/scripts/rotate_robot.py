@@ -15,7 +15,7 @@ ki=0
 kd=0.2
 
 twist = Twist()
-pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
 
 def PID_method(error,delta_t):
 	#get delta t

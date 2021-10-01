@@ -13,9 +13,9 @@ class ObjectFinder:
 		self.contour_tracker = ContourTracker((18, 68, 58), (35, 152, 224))
 		self.bridge = CvBridge()
 
-		self.img_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage, self.callback)
+		self.img_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage, self.callback, queue_size=1, buff_size=2**24)
 
-		self.debug_img_pub = rospy.Publisher("/output/image_raw/compressed", CompressedImage, queue_size=1)
+		self.debug_img_pub = rospy.Publisher("/output/debug_image/compressed", CompressedImage, queue_size=1)
 		self.target_pub = rospy.Publisher("/target_loc", Point, queue_size=1)
 
 	def callback(self, data):
