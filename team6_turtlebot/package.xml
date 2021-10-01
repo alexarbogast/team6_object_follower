@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+	<name>team6_turtlebot</name>
+	<version>0.1.0</version>
+	<description>Metapackage for team 6 ME 7785 labs</description>
+	<maintainer email="arbogastaw@gmail.com">Alex Arbogast</maintainer>
+	<license>BSD</license>
+
+	<author>Alex Arbogast</author>
+	<author>Chris Sevigney</author>
+
+	<buildtool_depend>catkin</buildtool_depend>
+
+	<exec_depend>team6_object_follower</exec_depend>
+
+	<export>
+		<metapackage/>
+	</export>
+</package>
