@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import rospy
 import cv2
 
@@ -31,7 +32,7 @@ class ObjectFinder:
 		target.x, target.y, target.z = x, y, 0
 		
 		self.target_pub.publish(target)
-		print(target)
+		rospy.loginfo(target)
 
 if __name__=='__main__':
 	rospy.init_node('find_object', anonymous=True)
