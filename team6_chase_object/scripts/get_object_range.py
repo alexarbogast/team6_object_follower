@@ -7,6 +7,7 @@
 import rospy
 
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float32
 
 class ObjectTracker:
 	def __init__(self):
