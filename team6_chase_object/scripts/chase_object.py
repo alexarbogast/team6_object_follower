@@ -20,7 +20,7 @@ BURGER_MAX_LIN_VEL = 4
 distance_setpoint = 5
 max_distance_error = 100
 angle_setpoint = 0
-max_angle_error = 90
+max_angle_error = 31
 
 #PID Variables - Angular
 kpA = 1.875	#Gains for PID controller
@@ -69,10 +69,10 @@ def callback(data):
 	if delta_t < 0.001:
 		delta_t = 0.001
 	
-	# Data<0 indicates the tracked object has left the camera frame and no motion will occur
+	# Data>100 indicates the tracked object has left the camera frame and no motion will occur
 	# Otherwise, we use the PID to generate velocity commands from the distance error
 
-	if distance < 0:
+	if distance > 100:
 
 		twist.linear.x = 0.0
         twist.angular.z = 0.0
