@@ -10,10 +10,18 @@ from sensor_msgs.msg import LaserScan
 
 class ObjectTracker:
 	def __init__(self):
-		self.lidar_sub = rospy.Subscriber("/scan", LaserScan, self.callback, queue_size=1)
+		self.lidar_sub = rospy.Subscriber("/scan", LaserScan)
+		self.heading_sub = rospy.Subscriber("/heading", Float32)
 
-	def callback(self, data):
+		ts = message_filters.TimeSynchronizer([lidar_sub, heading_sub], 10)
+		ts.registerCallback(callback)
+
+		point = Point
+		self.target_loc_pub = rospy.Publisher("/target_loc", Point, queuesize=1)
+
+	def callback(self, scan, heading):
 		rospy.loginfo(data)
+
 
 if __name__=='__main__':
 	rospy.init_node('object_range', anonymous = True)

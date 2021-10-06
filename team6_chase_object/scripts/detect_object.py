@@ -26,7 +26,7 @@ class ObjectDetector:
         self.bridge = CvBridge()
 
         self.img_sub = rospy.Subscriber("/raspicam_node/image/compressed/compressed",CompressedImage, self.callback, queue_size=1, buff_size=2**24)
-        #self.heading_pub = rospy.Publisher("/heading", )
+        self.heading_pub = rospy.Publisher("/heading", Float32, queue_size=1 )
 
     def callback(self, data):
         frame = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
@@ -37,6 +37,7 @@ class ObjectDetector:
         heading = Float32()
         heading.data =  (x - IMAGE_WIDTH/2)/(IMAGE_WIDTH/2) * HORIZONTAL_FOV/2
 
+        self.target_pub.publish(heading)
         rospy.loginfo(heading)
 
 
