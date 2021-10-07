@@ -1,7 +1,7 @@
 
 import sys
 import rospy
-from geometry_msgs.msg import Twist, Point, Pose2D
+from geometry_msgs.msg import Twist, Pose2D
 
 ###################################
 ## VARIABLE DECLARATION AND SETUP
@@ -111,6 +111,9 @@ def Init():
 	old_time = rospy.get_time()
 	sub = rospy.Subscriber(location_topic, Pose2D, callback, queue_size=1)
 	
-###################################
-## MAIN
-###################################
+if __name__=='__main__':
+	try:
+		Init()
+		rospy.spin()
+	except rospy.ROSInterruptException:
+		pass
