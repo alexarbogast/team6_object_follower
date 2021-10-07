@@ -13,24 +13,24 @@ location_topic='/target_loc'
 BURGER_MAX_ANG_VEL = 2.84
 BURGER_MAX_LIN_VEL = 0.22
 EMPTY_VAL = 101
-distance_setpoint = 0.8
+distance_setpoint = 1
 max_distance_error = 3.5
 angle_setpoint = 0
 max_angle_error = 31
 
 #PID Variables - Angular
-kpA = 0#1.75	#Gains for PID controller
-kiA = 0#0
-kdA = 0#0.00
+kpA = 1.75	#Gains for PID controller
+kiA = 0
+kdA = 0.00
 kA = [kpA, kiA, kdA]
 
 integrated_errorA = 0 # Initialize some variables for PID controller
 old_errorA = 0.0
 
 #PID Variables - Linear
-kpL = 1	#Gains for PID controller
+kpL = 10	#Gains for PID controller
 kiL = 0
-kdL = 0
+kdL = 0.05
 kL = [kpL, kiL, kdL]
 
 integrated_errorL = 0 # Initialize some variables for PID controller
@@ -85,14 +85,13 @@ def callback(data):
 																   integrated_errorA)
 
 		angle_velocity = BoundOutput(angle_velocity, BURGER_MAX_ANG_VEL)
-		angle_velocity = 0
 
 		# Linear velocity control
 		distance_error = distance - distance_setpoint
-		linear_velocity, old_errorL, integrated_errorL = PID_method(distance_error,
+		linear_velocity, old_errorL, integrated_errorL = PID_method(distance_error/max_distance_error,
 																	delta_t, kL, old_errorL,
 																	integrated_errorL) 
-
+		linear_velocity=0.1*linear_velocity
 		rospy.loginfo(linear_velocity)
 		linear_velocity = BoundOutput(linear_velocity, BURGER_MAX_LIN_VEL)
 

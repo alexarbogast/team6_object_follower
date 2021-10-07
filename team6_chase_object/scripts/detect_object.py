@@ -18,7 +18,7 @@ from object_tracking import ContourTracker
 
 # https://www.raspberrypi.org/documentation/accessories/camera.html
 HORIZONTAL_FOV = 62.2
-IMAGE_WIDTH = 320.0
+IMAGE_WIDTH = 410.0 # 320
 EMPTY_VAL = 101
 
 class ObjectDetector:
