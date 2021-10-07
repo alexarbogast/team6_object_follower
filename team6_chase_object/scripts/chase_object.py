@@ -19,9 +19,9 @@ angle_setpoint = 0
 max_angle_error = 31
 
 #PID Variables - Angular
-kpA = 1.875	#Gains for PID controller
+kpA = 1	#Gains for PID controller
 kiA = 0
-kdA = 0.125
+kdA = 0
 kA = [kpA, kiA, kdA]
 
 integrated_errorA = 0 # Initialize some variables for PID controller
@@ -63,7 +63,7 @@ def BoundOutput(output, abs_max):
 	return output 
 
 def callback(data):
-	global old_time, integrated_errorA, integrated_errorL, old_errorA, old_errorL, linear_velocity
+	global old_time, integrated_errorA, integrated_errorL, old_errorA, old_errorL, kA, kL
 	angle = data.theta
 	distance = data.x
 
@@ -81,9 +81,9 @@ def callback(data):
 
 	# Angular velocity control
 	angle_error = angle - angle_setpoint
-	angle_velocity, old_errorA, integrated_errorA = -PID_method(angle_error/max_angle_error,
-																delta_t, kA, old_errorA,
-																integrated_errorA)
+	angle_velocity, old_errorA, integrated_errorA = PID_method(angle_error/max_angle_error,
+															   delta_t, kA, old_errorA,
+															   integrated_errorA)
 
 	angle_velocity = BoundOutput(angle_velocity, BURGER_MAX_ANG_VEL)
 
@@ -94,6 +94,7 @@ def callback(data):
 																integrated_errorL) 
 
 	linear_velocity = BoundOutput(linear_velocity, BURGER_MAX_LIN_VEL)
+	linear_velocity = 0
 
 	twist.linear.x = linear_velocity
 	twist.angular.z = angle_velocity
