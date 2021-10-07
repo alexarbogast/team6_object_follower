@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import sys
 import rospy
@@ -11,6 +12,7 @@ from geometry_msgs.msg import Twist, Pose2D
 location_topic='/target_loc'
 BURGER_MAX_ANG_VEL = 2.84
 BURGER_MAX_LIN_VEL = 0.22
+EMPTY_VAL = 101
 distance_setpoint = 0.6
 max_distance_error = 3.5
 angle_setpoint = 0
@@ -25,16 +27,14 @@ kA = [kpA, kiA, kdA]
 integrated_errorA = 0 # Initialize some variables for PID controller
 old_errorA = 0.0
 
-
 #PID Variables - Linear
-kpL = 1.875	#Gains for PID controller
-kiL = 0
-kdL = 0.125
+kpL = 0#1.875	#Gains for PID controller
+kiL = 0#0
+kdL = 0#0.125
 kL = [kpL, kiL, kdL]
 
 integrated_errorL = 0 # Initialize some variables for PID controller
 old_errorL = 0.0
-
 
 twist = Twist()
 pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
@@ -55,10 +55,17 @@ def PID_method(error,delta_t,k,old_error,integrated_error):
 	old_error=error
 	return integrated_error+derivative_error+proportional_error, old_error, integrated_error
 
+def BoundOutput(output, abs_max):
+	if output > abs_max:
+		output = abs_max
+	elif output < -abs_max:
+		output = -abs_max
+	return output 
+
 def callback(data):
 	global old_time, integrated_errorA, integrated_errorL, old_errorA, old_errorL, linear_velocity
-	angle = data.x
-	distance = data.y
+	angle = data.theta
+	distance = data.x
 
 	# Get the new time and compute the delta_t 
 	new_time = rospy.get_time()
@@ -66,36 +73,32 @@ def callback(data):
 	if delta_t < 0.001:
 		delta_t = 0.001
 	
-	# Data>100 indicates the tracked object has left the camera frame and no motion will occur
+	# EMPTY_VAL indicates object has left the camera frame and no motion will occur
 	# Otherwise, we use the PID to generate velocity commands from the distance error
+	if distance == EMPTY_VAL or angle == EMPTY_VAL:
+		twist.linear.x, twist.angular.z = 0.0, 0.0
+		return
 
-	if distance > 100:
+	# Angular velocity control
+	angle_error = angle - angle_setpoint
+	angle_velocity, old_errorA, integrated_errorA = -PID_method(angle_error/max_angle_error,
+																delta_t, kA, old_errorA,
+																integrated_errorA)
 
-		twist.linear.x = 0.0
-		twist.angular.z = 0.0
-	
-	else:		
+	angle_velocity = BoundOutput(angle_velocity, BURGER_MAX_ANG_VEL)
 
-		angle_error = angle - angle_setpoint
-		angle_velocity, old_errorA, integrated_errorA = \
-			PID_method(-angle_error/max_angle_error, delta_t, kA, old_errorA, integrated_errorA)
+	# Linear velocity control
+	distance_error = distance - distance_setpoint
+	linear_velocity, old_errorL, integrated_errorL = PID_method(distance_error/max_distance_error,
+																delta_t, kL, old_errorL,
+																integrated_errorL) 
 
-		if angle_velocity>BURGER_MAX_ANG_VEL:
-			angle_velocity=BURGER_MAX_ANG_VEL
-		elif angle_velocity<-BURGER_MAX_ANG_VEL:
-			angle_velocity=-BURGER_MAX_ANG_VEL
+	linear_velocity = BoundOutput(linear_velocity, BURGER_MAX_LIN_VEL)
 
-		distance_error = distance - distance_setpoint
-		linear_velocity, old_errorL, integrated_errorL = \
-			PID_method(distance_error/max_distance_error, delta_t, kL, old_errorL, integrated_errorL) 
+	twist.linear.x = linear_velocity
+	twist.angular.z = angle_velocity
 
-		if linear_velocity>BURGER_MAX_LIN_VEL:
-			linear_velocity=BURGER_MAX_LIN_VEL
-		elif linear_velocity<-BURGER_MAX_LIN_VEL:
-			linear_velocity=-BURGER_MAX_LIN_VEL
-
-		twist.linear.x = linear_velocity
-		twist.angular.z = angle_velocity
+	rospy.loginfo(twist)
 
 	pub.publish(twist)
 	old_time=new_time
@@ -114,6 +117,7 @@ def Init():
 if __name__=='__main__':
 	try:
 		Init()
+		rospy.on_shutdown(shutdown_hook)
 		rospy.spin()
 	except rospy.ROSInterruptException:
 		pass

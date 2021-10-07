@@ -19,10 +19,11 @@ from object_tracking import ContourTracker
 # https://www.raspberrypi.org/documentation/accessories/camera.html
 HORIZONTAL_FOV = 62.2
 IMAGE_WIDTH = 320.0
+EMPTY_VAL = 101
 
 class ObjectDetector:
 	def __init__(self):
-		self.contour_tracker = ContourTracker((58, 29, 0), (110, 255, 255))
+		self.contour_tracker = ContourTracker((32, 23, 66), (129, 216, 208))
 		#self.contour_tracker = ContourTracker((0, 0, 0), (0, 89, 48)) # gazebo
 		self.bridge = CvBridge()
 
@@ -43,7 +44,7 @@ class ObjectDetector:
 
 		heading = Float32()
 		if x is None or y is None:
-			heading.data = 100; 
+			heading.data = EMPTY_VAL; 
 		else:
 			heading.data =  (IMAGE_WIDTH/2 - x)/IMAGE_WIDTH * HORIZONTAL_FOV
 
