@@ -23,6 +23,7 @@ IMAGE_WIDTH = 320.0
 class ObjectDetector:
 	def __init__(self):
 		self.contour_tracker = ContourTracker((58, 29, 0), (110, 255, 255))
+		#self.contour_tracker = ContourTracker((0, 0, 0), (0, 89, 48)) # gazebo
 		self.bridge = CvBridge()
 
 		self.img_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage, self.callback, queue_size=1, buff_size=2**24)
@@ -39,7 +40,6 @@ class ObjectDetector:
 		self.debug_img_pub.publish(msg)
 
 		x, y = center if center is not None else (-1, -1)
-		rospy.loginfo(center)
 
 		heading = Float32()
 		if x is None or y is None:
