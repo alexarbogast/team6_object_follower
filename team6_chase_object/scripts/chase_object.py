@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import sys
+
+from numpy.lib.arraysetops import intersect1d
 import rospy
 from geometry_msgs.msg import Twist, Pose2D
 
@@ -28,9 +30,9 @@ integrated_errorA = 0 # Initialize some variables for PID controller
 old_errorA = 0.0
 
 #PID Variables - Linear
-kpL = 10	#Gains for PID controller
-kiL = 0
-kdL = 0.05
+kpL = 8	#Gains for PID controller
+kiL = 0.0
+kdL = 0.08
 kL = [kpL, kiL, kdL]
 
 integrated_errorL = 0 # Initialize some variables for PID controller
@@ -44,14 +46,20 @@ pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 ## Function Declaration
 ###################################
 
-def PID_method(error,delta_t,k,old_error,integrated_error):
+def PID_method(error,delta_t,k,old_error,integrated_error, debug=False):
 	global old_time
 	kp=k[0]
 	ki=k[1] 
 	kd=k[2]
-	integrated_error = integrated_error+delta_t*error
+	integrated_error = ki*(integrated_error+delta_t*error)
 	derivative_error = kd*(error-old_error)/delta_t
 	proportional_error = kp*error
+
+	if debug:
+		print('Prop: %0.3f', proportional_error)
+		print('Int: %0.3f',  integrated_error)
+		print('Der: %0.3f\n',  derivative_error)
+	
 	old_error=error
 	return integrated_error+derivative_error+proportional_error, old_error, integrated_error
 
@@ -90,9 +98,9 @@ def callback(data):
 		distance_error = distance - distance_setpoint
 		linear_velocity, old_errorL, integrated_errorL = PID_method(distance_error/max_distance_error,
 																	delta_t, kL, old_errorL,
-																	integrated_errorL) 
+																	integrated_errorL, debug=True) 
 		linear_velocity=0.1*linear_velocity
-		rospy.loginfo(linear_velocity)
+		#rospy.loginfo(linear_velocity)
 		linear_velocity = BoundOutput(linear_velocity, BURGER_MAX_LIN_VEL)
 
 		twist.linear.x = linear_velocity
