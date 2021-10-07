@@ -53,7 +53,11 @@ pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
 def PID_method(error,delta_t,k,old_error,integrated_error):
 	global old_time
 	kp=k[0]
+<<<<<<< Updated upstream
 	ki=k[1] 
+=======
+	ki=k[1]
+>>>>>>> Stashed changes
 	kd=k[2]
 	integrated_error = integrated_error+delta_t*error
 	derivative_error = kd*(error-old_error)/delta_t
@@ -62,7 +66,10 @@ def PID_method(error,delta_t,k,old_error,integrated_error):
 	return integrated_error+derivative_error+proportional_error, old_error, integrated_error
 
 def callback(data):
+<<<<<<< Updated upstream
 	global old_time, integrated_errorA, integrated_errorL, old_errorA, old_errorL, linear_velocity
+=======
+>>>>>>> Stashed changes
 	angle = data.x
 	distance = data.y
 
@@ -95,10 +102,17 @@ def callback(data):
 		linear_velocity, old_errorL, integrated_errorL = \
 			PID_method(distance_error/max_distance_error, delta_t, kL, old_errorL, integrated_errorL) 
 
+<<<<<<< Updated upstream
 		if linear_velocity>BURGER_MAX_LIN_VEL:
 			linear_velocity=BURGER_MAX_LIN_VEL
 		elif linear_velocity<-BURGER_MAX_LIN_VEL:
 			linear_velocity=-BURGER_MAX_LIN_VEL
+=======
+		if vel_out>BURGER_MAX_LIN_VEL:
+			vel_out=BURGER_MAX_LIN_VEL
+		elif vel_out<-BURGER_MAX_LIN_VEL:
+			vel_out=-BURGER_MAX_LIN_VEL
+>>>>>>> Stashed changes
 
 		twist.linear.x = linear_velocity
 		twist.angular.z = angle_velocity
@@ -115,7 +129,11 @@ def Init():
 	global old_time
 	rospy.init_node('move_robot', anonymous=True)
 	old_time = rospy.get_time()
+<<<<<<< Updated upstream
 	sub = rospy.Subscriber(location_topic, Pose2D, callback, queue_size=1)
+=======
+	sub = rospy.Subscriber(location_topic, Point, callback,queue_size=10)
+>>>>>>> Stashed changes
 	
 ###################################
 ## MAIN

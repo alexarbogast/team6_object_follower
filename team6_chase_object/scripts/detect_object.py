@@ -18,7 +18,7 @@ from object_tracking import ContourTracker
 
 # https://www.raspberrypi.org/documentation/accessories/camera.html
 HORIZONTAL_FOV = 62.2
-IMAGE_WIDTH = 400.0
+IMAGE_WIDTH = 320.0
 
 class ObjectDetector:
 	def __init__(self):
@@ -39,13 +39,13 @@ class ObjectDetector:
 		self.debug_img_pub.publish(msg)
 
 		x, y = center if center is not None else (-1, -1)
+		rospy.loginfo(center)
 
 		heading = Float32()
-
 		if x is None or y is None:
 			heading.data = 100; 
 		else:
-			heading.data =  (IMAGE_WIDTH/2 - x)/(IMAGE_WIDTH/2) * HORIZONTAL_FOV/2
+			heading.data =  (IMAGE_WIDTH/2 - x)/IMAGE_WIDTH * HORIZONTAL_FOV
 
 		self.heading_pub.publish(heading)
 		rospy.loginfo(heading)

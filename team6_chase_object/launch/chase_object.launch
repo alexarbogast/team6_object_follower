@@ -1,0 +1,4 @@
+<launch>
+    <node name="detect_object" type="detect_object.py" pkg="team6_chase_object"/>
+    <node name="get_object_range" type="get_object_range.py" pkg="team6_chase_object"/>
+</launch>
