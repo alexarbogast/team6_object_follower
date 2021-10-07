@@ -15,7 +15,7 @@ location_topic='/target_loc'
 BURGER_MAX_ANG_VEL = 2.84
 BURGER_MAX_LIN_VEL = 0.22
 EMPTY_VAL = 101
-distance_setpoint = 1
+distance_setpoint = 0.5
 max_distance_error = 3.5
 angle_setpoint = 0
 max_angle_error = 31
@@ -23,16 +23,16 @@ max_angle_error = 31
 #PID Variables - Angular
 kpA = 1.75	#Gains for PID controller
 kiA = 0
-kdA = 0.00
+kdA = 0.15
 kA = [kpA, kiA, kdA]
 
 integrated_errorA = 0 # Initialize some variables for PID controller
 old_errorA = 0.0
 
 #PID Variables - Linear
-kpL = 8	#Gains for PID controller
+kpL = 15	#Gains for PID controller
 kiL = 0.0
-kdL = 0.08
+kdL = 0.1
 kL = [kpL, kiL, kdL]
 
 integrated_errorL = 0 # Initialize some variables for PID controller
@@ -83,7 +83,7 @@ def callback(data):
 	
 	# EMPTY_VAL indicates object has left the camera frame and no motion will occur
 	# Otherwise, we use the PID to generate velocity commands from the distance error
-	if distance == EMPTY_VAL or angle == EMPTY_VAL:
+	if distance == EMPTY_VAL or  angle == EMPTY_VAL:
 		twist.linear.x, twist.angular.z = 0.0, 0.0
 	else:
 		# Angular velocity control
@@ -96,6 +96,7 @@ def callback(data):
 
 		# Linear velocity control
 		distance_error = distance - distance_setpoint
+		print(distance_error)
 		linear_velocity, old_errorL, integrated_errorL = PID_method(distance_error/max_distance_error,
 																	delta_t, kL, old_errorL,
 																	integrated_errorL, debug=True) 

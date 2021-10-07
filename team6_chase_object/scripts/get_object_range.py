@@ -14,6 +14,9 @@ from std_msgs.msg import Float32
 HEADING_THRESH = 1
 EMPTY_VAL = 101
 
+LIDAR_RANGE_MIN = 0.12
+LIDAR_RANGE_MAX = 3.5
+
 class ObjectTracker:
 	def __init__(self):
 		self.lidar_data = LaserScan()
@@ -55,11 +58,15 @@ class ObjectTracker:
 			lidar_ang = [ang-360 if ang > 180 else ang for ang in lidar_ang]
 
 			dists = [self.lidar_data.ranges[i] for i in lidar_ang]
-			med_dist = np.median(dists)
-		except IndexError:
-			return EMPTY_VAL
+			mean_dist = np.mean(dists)
 
-		return med_dist
+			# filter values below lidar threshold
+			if mean_dist < LIDAR_RANGE_MIN or mean_dist > LIDAR_RANGE_MAX: 
+				mean_dist = EMPTY_VAL
+		except IndexError:
+			mean_dist =  EMPTY_VAL
+
+		return mean_dist
 
 if __name__=='__main__':
 	rospy.init_node('object_range', anonymous = True)
