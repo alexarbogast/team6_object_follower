@@ -20,10 +20,10 @@ class ObjectTracker:
 		
 		# subscribers
 		self.lidar_sub = rospy.Subscriber("/scan", LaserScan, self.lidar_callback, queue_size=1)
-		self.heading_sub = rospy.Subscriber("/heading", Float32, self.heading_callback, queue_size=1)
+		self.heading_sub = rospy.Subscriber("/heading", Float32, self.heading_callback, queue_size=10)
 		
 		# publishers
-		self.target_pub = rospy.Publisher("/target_loc", Pose2D, queue_size=1)
+		self.target_pub = rospy.Publisher("/target_loc", Pose2D, queue_size=10)
 
 	def lidar_callback(self, data):
 		self.lidar_data = data

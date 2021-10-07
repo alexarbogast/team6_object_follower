@@ -23,12 +23,12 @@ EMPTY_VAL = 101
 
 class ObjectDetector:
 	def __init__(self):
-		self.contour_tracker = ContourTracker((32, 23, 66), (129, 216, 208))
+		self.contour_tracker = ContourTracker((82, 91, 105), (162, 205, 201))
 		#self.contour_tracker = ContourTracker((0, 0, 0), (0, 89, 48)) # gazebo
 		self.bridge = CvBridge()
 
 		self.img_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage, self.callback, queue_size=1, buff_size=2**24)
-		self.heading_pub = rospy.Publisher("/heading", Float32, queue_size=1)
+		self.heading_pub = rospy.Publisher("/heading", Float32, queue_size=10)
 
    		self.debug_img_pub = rospy.Publisher("/output/debug_image/compressed", CompressedImage, queue_size=1)
 

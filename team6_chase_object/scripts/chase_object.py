@@ -113,7 +113,7 @@ def Init():
 	global old_time
 	rospy.init_node('move_robot', anonymous=True)
 	old_time = rospy.get_time()
-	sub = rospy.Subscriber(location_topic, Pose2D, callback, queue_size=1)
+	sub = rospy.Subscriber(location_topic, Pose2D, callback, queue_size=10)
 	
 if __name__=='__main__':
 	try:
