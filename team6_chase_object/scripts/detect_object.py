@@ -43,7 +43,7 @@ class ObjectDetector:
 		x, y = center if center is not None else (-1, -1)
 
 		heading = Float32()
-		if x is None or y is None:
+		if center is None:
 			heading.data = EMPTY_VAL; 
 		else:
 			heading.data =  (IMAGE_WIDTH/2 - x)/IMAGE_WIDTH * HORIZONTAL_FOV
