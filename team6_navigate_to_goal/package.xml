@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>team6_chase_object</name>
-  <version>0.0.0</version>
-  <description>The team6_chase_object package</description>
+  <name>team6_navigate_to_goal</name>
+  <version>0.1.0</version>
+  <description>The team6_navigate_to_goal package</description>
 
-  <maintainer email="arbogastaw@gamil.com">alex</maintainer>
+  <maintainer email="arbogastaw@gmail.com">alex</maintainer>
 
   <author>Alex Arbogast</author>
   <author>Chris Sevigney</author>

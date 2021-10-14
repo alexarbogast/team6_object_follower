@@ -35,6 +35,6 @@ class ObjectFinder:
 		rospy.loginfo(target)
 
 if __name__=='__main__':
-	rospy.init_node('find_object', anonymous=True)
+	rospy.init_node('find_object', anonymous=False)
 	of = ObjectFinder()
 	rospy.spin()
