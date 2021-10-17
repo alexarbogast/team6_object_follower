@@ -4,7 +4,7 @@ project(team6_object_follower)
 find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	sensor_msgs
-	cv_bridge
+	nav_msgs
 	roscpp
 	rospy
 )
@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_python_setup()
 
 catkin_package(
-	 CATKIN_DEPENDS geometry_msgs sensor_msgs cv_bridge rospy
+	 CATKIN_DEPENDS geometry_msgs nav_msgs sensor_msgs rospy
 )
 
 ## Build ##
