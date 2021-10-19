@@ -14,10 +14,11 @@ from geometry_msgs.msg import Twist, Pose2D
 from pid import PID
 
 import numpy as np
+import math
 from enum import Enum
 
 # constants
-OBST_THRESH = 0.2 # m
+OBST_THRESH = 0.3 # m
 WAYPOINT_THRESH = 0.01 # m
 
 BURGER_MAX_ANG_VEL = 2.84
@@ -159,27 +160,39 @@ class GoToGoal:
 		return control_output
 
 class AvoidObstacle:
-	def __init__(self, obstacle_thresh=0.1):
+	def __init__(self, obstacle_thresh=0.5):
 		self._obstacle_thresh=obstacle_thresh
-		self._ang_controller =  PID(1.7, 0, 0, BURGER_MAX_ANG_VEL, -BURGER_MAX_ANG_VEL)
-		self._dist_controller = PID(0.8, 0, 0.1, BURGER_MAX_LIN_VEL, -BURGER_MAX_LIN_VEL)
+		self._ang_controller =  PID(1.7, 0, 0.1, BURGER_MAX_ANG_VEL, -BURGER_MAX_ANG_VEL)
 		pass
 
 	def GetMinDistLocation(self,lidar_data):
-		angular_location=np.argmin(lidar_data.ranges)
+		filtered_lidar_data = []
+		for point in lidar_data.ranges:
+			point = 1000 if point == 0 else point
+			filtered_lidar_data.append(point)
+
+		angular_location_deg=np.argmin(filtered_lidar_data)
+		angular_location=np.radians(angular_location_deg)
 		return angular_location
 
 	def Control(self,lidar_data,dt):
-		angular_location=self.GetMinDistLocation(lidar_data)
-		print(angular_location)
-		ang_vel = self._ang_controller.Calculate(dt, angular_location, 270)
-		lin_vel = 0
+ 		ang_loc=self.GetMinDistLocation(lidar_data)
+		print(ang_loc)
+		ang_loc = math.fmod(math.fmod(ang_loc, 2*np.pi) + 2*np.pi, 2*np.pi)
+		if (ang_loc > np.pi):
+			ang_loc -= 2*np.pi
+		print(ang_loc)
+		ang_vel = self._ang_controller.Calculate(dt, ang_loc, np.pi/2)
+		if abs(ang_loc-np.pi/2)<0.2:
+			lin_vel = 0.1
+		else:
+			lin_vel = 0
 		control_output = Twist()
 		control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
 		return control_output
 
 class NavController:
-	def __init__(self, waypoints,  obstacle_thresh=0.1, waypoint_thresh=0.01):
+	def __init__(self, waypoints,  obstacle_thresh=0.5, waypoint_thresh=0.01):
 		self._obstacle_thresh = obstacle_thresh
 
 		self._twist = Twist()
@@ -220,24 +233,24 @@ class NavController:
 		if heading == EMPTY_VAL:
 			return EMPTY_VAL
 
-		try:
-			heading_range = np.array(range(int(heading) - HEADING_THRESH, 
-										   int(heading) + HEADING_THRESH + 1))
+#		try:
+		heading_range = np.array(range(int(heading) - HEADING_THRESH, 
+									int(heading) + HEADING_THRESH + 1))
 
-			## wrap angles
-			lidar_ang = heading_range % 360		
-			lidar_ang = (lidar_ang + 360) % 360 # force positive 
+		## wrap angles
+		lidar_ang = heading_range % 360		
+		lidar_ang = (lidar_ang + 360) % 360 # force positive 
 
-			lidar_ang = [ang-360 if ang > 180 else ang for ang in lidar_ang]
+		lidar_ang = [ang-360 if ang > 180 else ang for ang in lidar_ang]
 
-			dists = [lidar_data.ranges[i] for i in lidar_ang]
-			min_dist = np.min(dists)
+		dists = [lidar_data.ranges[i] for i in lidar_ang]
+		min_dist = np.min(dists)
 
-			# filter values below lidar threshold
-			if min_dist < LIDAR_RANGE_MIN or min_dist > LIDAR_RANGE_MAX: 
-				min_dist = EMPTY_VAL
-		except IndexError:
-			min_dist =  EMPTY_VAL
+#			# filter values below lidar threshold
+#			if min_dist < LIDAR_RANGE_MIN or min_dist > LIDAR_RANGE_MAX: 
+#				min_dist = EMPTY_VAL
+#		except IndexError:
+#			min_dist =  EMPTY_VAL
 
 		return min_dist
 
