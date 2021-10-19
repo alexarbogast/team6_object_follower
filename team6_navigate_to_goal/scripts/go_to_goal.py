@@ -244,7 +244,12 @@ class NavController:
 		lidar_ang = [ang-360 if ang > 180 else ang for ang in lidar_ang]
 
 		dists = [lidar_data.ranges[i] for i in lidar_ang]
-		min_dist = np.min(dists)
+		filtered_dists=[]
+		for point in dists:
+			point = 1000 if point == 0 else point
+			filtered_dists.append(point)
+
+		min_dist = np.min(filtered_dists)
 
 #			# filter values below lidar threshold
 #			if min_dist < LIDAR_RANGE_MIN or min_dist > LIDAR_RANGE_MAX: 
