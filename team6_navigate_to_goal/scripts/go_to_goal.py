@@ -165,8 +165,18 @@ class AvoidObstacle:
 		self._dist_controller = PID(0.8, 0, 0.1, BURGER_MAX_LIN_VEL, -BURGER_MAX_LIN_VEL)
 		pass
 
-	def Control(self):
-		return Twist()
+	def GetMinDistLocation(self,lidar_data):
+		angular_location=np.argmin(lidar_data.ranges)
+		return angular_location
+
+	def Control(self,lidar_data,dt):
+		angular_location=self.GetMinDistLocation(lidar_data)
+		print(angular_location)
+		ang_vel = self._ang_controller.Calculate(dt, angular_location, 270)
+		lin_vel = 0
+		control_output = Twist()
+		control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
+		return control_output
 
 class NavController:
 	def __init__(self, waypoints,  obstacle_thresh=0.1, waypoint_thresh=0.01):
@@ -195,7 +205,7 @@ class NavController:
 		if state == State.GoToGoal:
 			self._twist = self._go_to_goal.Control(self._odom.GetOdometry(), dt)
 		else:
-			self._twist = self._avoid_obstacle.Control()
+			self._twist = self._avoid_obstacle.Control(lidar_data,dt)
 
 		self._vel_pub.publish(self._twist)
 		self._time = rospy.get_time()
