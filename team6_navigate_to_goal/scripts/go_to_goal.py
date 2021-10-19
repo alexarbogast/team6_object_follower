@@ -123,7 +123,7 @@ class GoToGoal:
 
 		return waypoint_rf
 
-	def Control(self, odom):
+	def Control(self, odom, dt):
 		ang_vel, lin_vel = 0, 0
 
 		waypoint_rf = self.GetCurrentWaypointRf(odom)
@@ -170,6 +170,7 @@ class NavController:
 		self._obstacle_thresh = obstacle_thresh
 
 		self._twist = Twist()
+		self._time = rospy.get_time()
 
 		self._odom = Odom()
 		self._go_to_goal = GoToGoal(waypoints, waypoint_thresh)
@@ -183,12 +184,18 @@ class NavController:
 	def LidarCallback(self, lidar_data):
 		state = self.FindState(lidar_data)
 
+		# calculate dt
+		time = rospy.get_time()
+		dt = self._time - time
+		dt = dt if dt > 0.001 else 0.001
+
 		if state == State.GoToGoal:
-			self._twist = self._go_to_goal.Control(self._odom.GetOdometry())
+			self._twist = self._go_to_goal.Control(self._odom.GetOdometry(), dt)
 		else:
 			self._twist = self._avoid_obstacle.Control()
 
 		self._vel_pub.publish(self._twist)
+		self._time = rospy.get_time()
 
 	def FindState(self, lidar_data):
 		# TODO: parse lidar data to find if an obstacle
