@@ -21,7 +21,7 @@ OBST_THRESH = 0.2 # m
 WAYPOINT_THRESH = 0.01 # m
 
 BURGER_MAX_ANG_VEL = 2.84
-BURGER_MAX_LIN_VEL = 0.22
+BURGER_MAX_LIN_VEL = 0.2#0.22
 
 class State(Enum):
 	GoToGoal = 1
@@ -40,6 +40,13 @@ class Waypoint:
 
 	def GetDistance(self):
 		return np.sqrt(self.x*self.x + self.y*self.y)
+
+	def Scale(self, percentage):
+		self.x += percentage*self.x
+		self.y += percentage*self.y
+		return self
+
+
 
 class Odom:
 	def __init__(self):
@@ -93,8 +100,8 @@ class GoToGoal:
 		self._waypoints = waypoints
 		self._thresh = waypoint_thresh
 
-		self._ang_controller =  PID(1.7, 0, 0)
-		self._dist_controller = PID(1, 0, 0.0)
+		self._ang_controller =  PID(1.7, 0, 0, BURGER_MAX_ANG_VEL, -BURGER_MAX_ANG_VEL)
+		self._dist_controller = PID(0.8, 0, 0.1, BURGER_MAX_LIN_VEL, -BURGER_MAX_LIN_VEL)
 
 	def GetCurrentWaypointRf(self, odom):
 		waypoint = self._waypoints[0]
@@ -128,17 +135,14 @@ class GoToGoal:
 			self._waypoints.pop(0)
 			print('waypoint reached\n')
 
-		elif (wp_heading > test_angle_thresh):
-			ang_vel = self._ang_controller.Calculate(0.01, wp_heading, 0)
-			print('going for angle\n')
+		#elif (wp_heading > test_angle_thresh):
+		#	ang_vel = self._ang_controller.Calculate(0.01, wp_heading, 0)
+		#	print('going for angle\n')
 
 		else: # control position (robot frame)
-			ang_vel = self._ang_controller.Calculate(0.01, wp_heading, 0)
+			ang_vel = self._ang_controller.Calculate(0.01, wp_heading, 0, )
 			lin_vel = self._dist_controller.Calculate(0.01, waypoint_rf.x, 0)
 			print('going for position\n')
-		
-		ang_vel = PID.Saturate(ang_vel, BURGER_MAX_ANG_VEL, -BURGER_MAX_ANG_VEL)
-		lin_vel = PID.Saturate(lin_vel, BURGER_MAX_LIN_VEL, -BURGER_MAX_LIN_VEL)
 			
 		control_output = Twist()
 		control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
@@ -221,6 +225,10 @@ if __name__=='__main__':
 	point3 = Waypoint(0, 1.4)
 
 	waypoints = [point1, point2, point3]
+
+	# scale for dead_reckoning
+	for point in waypoints:
+		point.Scale(0.10)
 
 	state_controller = NavController(waypoints, OBST_THRESH, WAYPOINT_THRESH)
 
