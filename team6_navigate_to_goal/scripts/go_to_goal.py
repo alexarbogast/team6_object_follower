@@ -140,8 +140,8 @@ class GoToGoal:
 		#	print('going for angle\n')
 
 		else: # control position (robot frame)
-			ang_vel = self._ang_controller.Calculate(0.01, wp_heading, 0, )
-			lin_vel = self._dist_controller.Calculate(0.01, waypoint_rf.x, 0)
+			ang_vel = self._ang_controller.Calculate(dt, wp_heading, 0)
+			lin_vel = self._dist_controller.Calculate(dt, waypoint_rf.x, 0)
 			print('going for position\n')
 			
 		control_output = Twist()
