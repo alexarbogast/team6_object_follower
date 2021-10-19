@@ -18,7 +18,7 @@ import math
 from enum import Enum
 
 # constants
-OBST_THRESH = 0.3 # m
+OBST_THRESH = 0.4 # m
 WAYPOINT_THRESH = 0.01 # m
 
 BURGER_MAX_ANG_VEL = 2.84
