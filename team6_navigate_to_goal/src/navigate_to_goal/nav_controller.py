@@ -26,6 +26,7 @@ class NavController:
 		rospy.on_shutdown(self.ShutdownNav)
 
 	def LidarCallback(self, lidar_data):
+		pause = False
 		state = self.FindState(lidar_data)
 
 		# calculate dt
@@ -41,7 +42,7 @@ class NavController:
 		self._vel_pub.publish(self._twist)
 		
 		if pause:
-			rospy.sleep(5)
+			rospy.sleep(10)
 
 		self._time = rospy.get_time()
 
