@@ -35,7 +35,7 @@ class AvoidObstacle:
 		if abs(ang_loc-np.pi/2)<0.2:
 			lin_vel = 0.1
 		else:
-			lin_vel = 0
+			lin_vel = 0.05
 
 		control_output = Twist()
 		control_output.angular.z, control_output.linear.x = ang_vel, lin_vel

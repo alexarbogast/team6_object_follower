@@ -9,7 +9,7 @@ import rospy
 from navigate_to_goal import Waypoint, NavController
 
 # constants
-OBST_THRESH = 0.4 # m
+OBST_THRESH = 0.25 # m
 WAYPOINT_THRESH = 0.01 # m
 
 BURGER_MAX_ANG_VEL = 2.84
@@ -31,7 +31,7 @@ if __name__=='__main__':
 
 	# scale for dead_reckoning
 	for point in waypoints:
-		point.Scale(0.10)
+		point.Scale(0.09)
 
 	state_controller = NavController(waypoints, ang_vel_bounds, lin_vel_bounds, OBST_THRESH, WAYPOINT_THRESH)
 

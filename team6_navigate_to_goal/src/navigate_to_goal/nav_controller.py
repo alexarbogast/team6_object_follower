@@ -34,23 +34,20 @@ class NavController:
 		dt = dt if dt > 0.001 else 0.001
 
 		if state == State.GoToGoal:
-			self._twist = self._go_to_goal.Control(self._odom.GetOdometry(), dt)
+			(self._twist, pause) = self._go_to_goal.Control(self._odom.GetOdometry(), dt)
 		else:
 			self._twist = self._avoid_obstacle.Control(lidar_data,dt)
 
 		self._vel_pub.publish(self._twist)
+		
+		if pause:
+			rospy.sleep(5)
+
 		self._time = rospy.get_time()
 
 	def parse_distances(self, heading, lidar_data):
-		EMPTY_VAL = 101
-		LIDAR_RANGE_MIN = 0.12
-		LIDAR_RANGE_MAX = 3.5
-		HEADING_THRESH=5
-		
-		# do not parse for invalid heading
-		if heading == EMPTY_VAL:
-			return EMPTY_VAL
-
+		HEADING_THRESH=30
+	
 #		try:
 		heading_range = np.array(range(int(heading) - HEADING_THRESH, 
 									int(heading) + HEADING_THRESH + 1))
