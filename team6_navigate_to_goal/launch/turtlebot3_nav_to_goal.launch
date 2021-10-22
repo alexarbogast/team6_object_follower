@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch"/>
+    <include file="$(find team6_navigate_to_goal)/launch/nav_to_goal.launch"/>
+</launch>

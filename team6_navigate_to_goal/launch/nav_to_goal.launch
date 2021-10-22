@@ -1,0 +1,3 @@
+<launch>
+    <node name="nav_to_goal" type="go_to_goal.py" pkg="team6_navigate_to_goal"/>
+</launch>

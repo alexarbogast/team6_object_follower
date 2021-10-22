@@ -1,4 +1,5 @@
 import numpy as np
+import rospy
 
 from geometry_msgs.msg import Twist, Pose2D
 
@@ -34,6 +35,7 @@ class GoToGoal:
 		return waypoint_rf
 
 	def Control(self, odom, dt):
+		pause = False
 		ang_vel, lin_vel = 0, 0
 
 		waypoint_rf = self.GetCurrentWaypointRf(odom)
@@ -43,6 +45,7 @@ class GoToGoal:
 
 		if (waypoint_rf.GetDistance() < self._thresh):
 			self._waypoints.pop(0)
+			pause = True
 			print('waypoint reached\n')
 
 		#elif (wp_heading > test_angle_thresh):
@@ -66,4 +69,4 @@ class GoToGoal:
 		print("Angular Vel = {0}".format(ang_vel))
 		print("Linear Vel = {0}".format(lin_vel))
 
-		return control_output
+		return (control_output, pause)
