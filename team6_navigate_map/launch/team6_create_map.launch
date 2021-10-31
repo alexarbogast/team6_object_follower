@@ -1,0 +1,11 @@
+<launch>
+    <arg name="sim" default="false"/>
+    
+    <!--run simulation-->
+    <group if="$(arg sim)">
+        <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_maze.launch"/>
+    </group> 
+    
+    <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
+    <include file="$(find turtlebot3_teleop)/launch/turtlebot3_teleop_key.launch"/>
+</launch>
