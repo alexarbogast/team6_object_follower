@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+############################################################
+# navigate_map node: moves the turtle bot to waypoints 
+# while navigating through map 
+############################################################
+
+import sys
+import rospy
+
+from geometry_msgs.msg import PoseStamped, Point, Quaternion
+
+class Waypoints:
+	def __init__(self, file_path):
+		self.waypoints = []
+		self.Parse(file_path)
+
+	def __str__(self):
+		return str(self.waypoints)
+
+	def len(self):
+		return len(self.waypoints)
+
+	def Parse(self, file_path):
+		with open(file_path) as file:
+			lines = file.readlines()
+
+		file.close()
+		for line in lines:
+			point = [float(x) for x in line.split(',')]
+			waypoint = PoseStamped()
+			
+			pos = Point(point[0], point[1], point[2])
+			orient = Quaternion(point[3], point[4], point[5], point[6])
+
+			waypoint.pose.position, waypoint.pose.orientation = pos, orient
+			self.waypoints.append(waypoint)
+	
+
+if __name__=="__main__":
+	rospy.init_node('navigate_map', anonymous=False)
+	
+	# waypoints file path passed via command line/launch file
+	file_path = sys.argv[1]
+	waypoints = Waypoints(file_path)
+
+	try:
+		while (waypoints.len()):
+			print(waypoints.len())
+			waypoints.waypoints.pop()
+	except rospy.ROSInterruptException:
+		pass
