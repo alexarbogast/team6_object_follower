@@ -4,7 +4,7 @@ project(team6_navigate_map)
 find_package(catkin REQUIRED COMPONENTS geometry_msgs)
 
 catkin_package(
-	CATKIN_DEPENDS rospy geometry_msgs
+	CATKIN_DEPENDS rospy geometry_msgs actionlib_msgs
 )
 
 ## Build ##

@@ -1,5 +1,4 @@
 <launch>
-    <arg name="waypoints" default="$(find team6_navigate_map)/waypoints/global_waypoints.txt"/>
     <arg name="map_file" default="$(find team6_navigate_map)/maps/maze_map_sim.yaml"/>
 
     <!-- launch gazebo -->
@@ -9,6 +8,4 @@
     <include file="$(find turtlebot3_navigation)/launch/turtlebot3_navigation.launch">
         <arg name="map_file" value="$(arg map_file)"/>
     </include>
-
-    <node name="navigate_map" type="navigate_map" pkg="team6_navigate_map" args="$(arg waypoints)" output="screen"/>
 </launch>

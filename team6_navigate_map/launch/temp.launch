@@ -1,0 +1,4 @@
+<launch>
+    <arg name="waypoints" default="$(find team6_navigate_map)/waypoints/global_waypoints.txt"/>
+    <node name="navigate_map" type="navigate_map" pkg="team6_navigate_map" args="$(arg waypoints)" output="screen"/>
+</launch>

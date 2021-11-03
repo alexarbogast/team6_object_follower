@@ -9,6 +9,43 @@ import sys
 import rospy
 
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
+from actionlib_msgs.msg import GoalStatusArray, GoalStatus
+
+class Navigation:
+	def __init__(self, waypoints):
+		self.move_base_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+			
+		self.waypoints = waypoints
+		test = self.waypoints.GetCurrent()
+		test.header.stamp = rospy.Time.now()
+		self.move_base_pub.publish(test)
+
+		self.goal_status = GoalStatus()
+		self.status_sub = rospy.Subscriber("/move_base/status", GoalStatusArray, self.CheckStatus)
+
+		self.NavWaypoints()
+
+	def CheckStatus(self, data):
+		try:
+			self.goal_status = data.status_list[0]
+		except IndexError:
+			pass
+
+	def NavWaypoints(self):
+		while True:
+			test = self.waypoints.GetCurrent()
+			test.header.stamp = rospy.Time.now()
+			print(self.goal_status)
+		#while (self.waypoints.len()):
+		#	if self.goal_status.goal_id == GoalStatus.SUCCEEDED:
+		#		if self.waypoints.PopCurrent():
+		#			rospy.sleep(2)
+		#			self.move_base_pub.publish(self.waypoints.GetCurrent())
+		#		else:
+		#			continue		
+		#	else:
+		#		rospy.sleep(0.5)
+		#		rospy.loginfo(self.goal_status)
 
 class Waypoints:
 	def __init__(self, file_path):
@@ -29,13 +66,20 @@ class Waypoints:
 		for line in lines:
 			point = [float(x) for x in line.split(',')]
 			waypoint = PoseStamped()
+			waypoint.header.frame_id = "map"
 			
 			pos = Point(point[0], point[1], point[2])
 			orient = Quaternion(point[3], point[4], point[5], point[6])
 
 			waypoint.pose.position, waypoint.pose.orientation = pos, orient
 			self.waypoints.append(waypoint)
-	
+
+	def GetCurrent(self):
+		return self.waypoints[0]
+
+	def PopCurrent(self):
+		self.waypoints.pop(0)
+		return len(self.waypoints)
 
 if __name__=="__main__":
 	rospy.init_node('navigate_map', anonymous=False)
@@ -45,8 +89,10 @@ if __name__=="__main__":
 	waypoints = Waypoints(file_path)
 
 	try:
-		while (waypoints.len()):
-			print(waypoints.len())
-			waypoints.waypoints.pop()
+		nav = Navigation(waypoints)
+		# while (waypoints.len()):
+		#
+		# 	print(waypoints.len())
+		#	waypoints.waypoints.pop()
 	except rospy.ROSInterruptException:
 		pass
