@@ -5,7 +5,4 @@
     <include file="$(find turtlebot3_navigation)/launch/turtlebot3_navigation.launch">
         <arg name="map_file" value="$(arg map_file)"/>
     </include>
-
-    <rosparam file="$(find team6_navigate_map)/param/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(find team6_navigate_map)/param/costmap_custom_params.yaml" command="load" />
 </launch>

@@ -45,9 +45,11 @@ class Navigation:
 			state = self.move_base.get_state()
 
 			if success and state == GoalStatus.SUCCEEDED:
+				rospy.loginfo(self.move_base.get_goal_status_text)
 				rospy.sleep(2)
 				self.waypoints.PopCurrent()
 			else:
+				rospy.loginfo(self.move_base.get_goal_status_text)
 				self.move_base.cancel_goal()
 				rospy.logerr("Did not reach goal... exiting")
 				continue
