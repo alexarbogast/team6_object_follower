@@ -1,4 +1,0 @@
-<launch>    
-    <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_maze.launch"/>
-    <include file="$(find team6_navigate_map)/launch/create_map.launch"/>
-</launch>
