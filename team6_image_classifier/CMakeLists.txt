@@ -1,13 +1,23 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(team6_navigate_map)
+project(team6_image_classifier)
 
 find_package(catkin REQUIRED COMPONENTS
-	geometry_msgs
+	cv_bridge
 	rospy
+	sensor_msgs
+	message_generation
+)
+
+add_service_files(FILES
+	Classify.srv
+)
+
+generate_messages(
+        DEPENDENCIES
 )
 
 catkin_package(
-	CATKIN_DEPENDS rospy geometry_msgs actionlib_msgs
+	CATKIN_DEPENDS rospy geometry_msgs sensor_msgs
 )
 
 ## Build ##
@@ -16,6 +26,5 @@ include_directories(
 )
 
 catkin_install_python(PROGRAMS
-	scripts/navigate_map
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
