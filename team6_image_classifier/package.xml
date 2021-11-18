@@ -25,6 +25,9 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
 
+  <depend>python-numpy</depend>
+  <depend>python-sklearn</depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

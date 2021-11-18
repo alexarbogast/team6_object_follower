@@ -4,12 +4,25 @@ import rospy
 import rospkg
 import numpy as np
 
-from rospy.exceptions import ROSInterruptException
+from sklearn.externals import joblib
+from team6_image_classifier.srv import Classify
+
 
 class ClassifierNode:
 
     def __init__(self):
-        filepath = rospy.get_param('~file_name', 'classifier.pkl')
+        # Load the previously-trained classifier model
+        filepath = rospy.get_param('~file_name', 'sgdclassifier.pkl')
+
+        if len(filepath) > 0 and filepath[0] != '/':
+            filepath = rospkg.RosPack().get_path('team6_image_classifier') + '/data/classifier/' + filepath
+
+        self.model = joblib.load(filepath)
+        self.service = rospy.Service('~classify', Classify, self.classify)
+
+    def classify(self, request):
+        return self.model.predict(np.asarray(request.feature_vector).reshape(1, -1))
+
 
 if __name__ == '__main__':
     rospy.init_node('classifier_node')

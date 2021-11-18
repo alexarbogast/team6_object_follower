@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+
+import rospy
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import SGDClassifier
+from sklearn import metrics
+
+from team6_image_classifier import BGR2GrayTransformer, HogTransformer
+from team6_image_classifier import utilities
+
+def train_classifier(src, visualize=False):
+	"""
+	Parameter
+	---------
+	src: str
+		filepath to folder containing images and label file
+	vis_dist: bool
+		visualize the training and test distribution
+	"""
+
+	# load data and labels key
+	data = utilities.load_img_data(src, width=64, height=128)
+	data, label = np.array(data['data']), np.array(data['label'])
+
+	rospy.loginfo("Imported {0} data instances".format(data.shape[0]))
+
+	# shuffle data and split into training + test
+	split = 0.4
+	data_train, data_test, label_train, label_test = train_test_split(
+		data, 
+		label,
+		test_size=split,
+		shuffle=True,
+		random_state=43
+	)
+
+	if (visualize):
+		utilities.plot_train_test_bar(label_train, label_test)		
+
+	# =============== prepare ================
+	grayify = BGR2GrayTransformer()
+	hogify = HogTransformer(
+		pixels_per_cell=(14, 14),
+		cells_per_block=(2,2),
+	)
+	scalify = StandardScaler()
+
+	# ================= train =================
+	rospy.loginfo('Training Classifier')
+
+	gray_train = grayify.fit_transform(data_train)
+	gray_hog = hogify.fit_transform(gray_train)
+	prepd_data_train = scalify.fit_transform(gray_hog)
+
+	sgd_clf = SGDClassifier(random_state=42, max_iter=1000, tol=1e-3)
+	sgd_clf.fit(prepd_data_train, label_train)
+
+	# ================= test ==================
+	gray_test = grayify.fit_transform(data_test)
+	gray_test = hogify.fit_transform(gray_test)
+	prepd_data_test = scalify.fit_transform(gray_test)
+
+	# =============== evaluate ================
+	predicted = sgd_clf.predict(prepd_data_test)
+	rospy.loginfo('\n' + metrics.classification_report(label_test, predicted))
+	rospy.loginfo('\n' + str(metrics.confusion_matrix(label_test, predicted)))
+
+	return sgd_clf
+
+def main():
+	rospy.init_node('train_classifier')
+
+	filepath = '/home/alex/Desktop/data'
+	trained_model = train_classifier(filepath, visualize=False)
+
+	utilities.save_model(trained_model, 'sgdclassifier.pkl')
+
+if __name__ == '__main__':
+	try:
+		main()
+	except rospy.ROSInterruptException:
+		pass
