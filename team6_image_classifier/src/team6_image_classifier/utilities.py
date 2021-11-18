@@ -2,10 +2,11 @@ import cv2
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from sklearn.externals import joblib
 
-def load_img_data(src, pklname=None, width=150, height=None):
+def load_img_data(src, grnd_truth='label.txt', pklname=None, width=150, height=None):
 	"""
 	load images from path that contains a labels.txt file
 	with rows of comma-seperated image name and labels
@@ -19,7 +20,7 @@ def load_img_data(src, pklname=None, width=150, height=None):
 
 	# read image labels
 	label_dict = {} # {filename: , label: }
-	with (src / 'label.txt').open() as f:
+	with (src / grnd_truth).open() as f:
 		for line in f:
 			key, value = line.split(',')
 			label_dict[key] = int(value)
@@ -81,3 +82,24 @@ def load_pickle_data(src):
 
 def save_model(model, name):
 	joblib.dump(model, name)
+
+def plot_confusion_matrix(conf_mat):
+	conf_mat_norm = 100*conf_mat / conf_mat.sum(axis=1, keepdims=True)
+	
+	ax = plt.subplot()
+	im = ax.imshow(conf_mat_norm)
+	ax.set_title('Confusion Matrix')
+	ax.set_xlabel('Predicted')
+	ax.set_ylabel('True')
+	
+	divider = make_axes_locatable(ax)
+	cax = divider.append_axes("right", size="5%", pad=0.05)
+	cb = plt.colorbar(im, cax=cax)
+	cb.set_label("Percentage Correct")
+
+	# create text annotations
+	for i in range(conf_mat_norm.shape[0]):
+		for j in range(conf_mat_norm.shape[1]):
+			test = ax.text(j, i, conf_mat[i, j], ha='center', va='center', fontweight='bold')
+
+	plt.show()
