@@ -1,0 +1,7 @@
+<launch>
+
+    <!-- classification service node -->
+    <node name="classifier_node" type="classifier_node" pkg="team6_image_classifier"/>
+    <node name="image_node" type="image_node" pkg="team6_image_classifier"/>
+    
+</launch>

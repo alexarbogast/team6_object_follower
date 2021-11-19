@@ -4,6 +4,17 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from skimage.feature import hog 
 
+class ResizeTransformer(BaseEstimator, TransformerMixin):
+	def __init__(self, width=150, height=None):
+		height = width if height is None else height 
+		self.width, self.height = width, height
+
+	def fit(self, X, y=None):
+		return self
+	
+	def transform(self, X, y=None):
+		return [cv2.resize(img, (self.width, self.height)) for img in X]
+
 class BGR2GrayTransformer(BaseEstimator, TransformerMixin):
 	""" Convert an array of RGB images to grayscale"""
 	def __init__(self):

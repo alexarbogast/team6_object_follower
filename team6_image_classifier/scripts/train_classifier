@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 import rospy
+import cv2
 import numpy as np
 
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import SGDClassifier
 from sklearn import metrics
@@ -41,34 +43,37 @@ def train_classifier(src, visualize=False):
 		utilities.plot_train_test_bar(label_train, label_test)		
 
 	# =============== prepare ================
-	grayify = BGR2GrayTransformer()
-	hogify = HogTransformer(
-		pixels_per_cell=(14, 14),
-		cells_per_block=(2,2),
-	)
-	scalify = StandardScaler()
+	HOG_pipeline = Pipeline([
+	('grayify', BGR2GrayTransformer()),
+	('hogify', HogTransformer(
+		pixels_per_cell=(14, 14), 
+		cells_per_block=(2, 2), 
+		orientations=9, 
+		block_norm='L2-Hys')
+	),
+	('scalify', StandardScaler()),
+	('classify', SGDClassifier(random_state=42, max_iter=1000, tol=1e-3))
+	])
+
 
 	# ================= train =================
 	rospy.loginfo('Training Classifier')
+	classified_train = HOG_pipeline.fit(data_train, label_train)
 
-	gray_train = grayify.fit_transform(data_train)
-	gray_hog = hogify.fit_transform(gray_train)
-	prepd_data_train = scalify.fit_transform(gray_hog)
+	#foo, viz = hogify.visualize(gray_train[3])
+	#cv2.imshow('HOG', viz)
+	#cv2.waitKey(0)
+	#cv2.destroyAllWindows()
 
-	sgd_clf = SGDClassifier(random_state=42, max_iter=1000, tol=1e-3)
-	sgd_clf.fit(prepd_data_train, label_train)
-
-	# ================= test ==================
-	gray_test = grayify.fit_transform(data_test)
-	gray_test = hogify.fit_transform(gray_test)
-	prepd_data_test = scalify.fit_transform(gray_test)
 
 	# =============== evaluate ================
-	predicted = sgd_clf.predict(prepd_data_test)
+	predicted = HOG_pipeline.predict(data_test)
 	rospy.loginfo('\n' + metrics.classification_report(label_test, predicted))
-	rospy.loginfo('\n' + str(metrics.confusion_matrix(label_test, predicted)))
+	conf_mtx = metrics.confusion_matrix(label_test, predicted)
+	rospy.loginfo('\n' + str(conf_mtx))
+	utilities.plot_confusion_matrix(conf_mtx)
 
-	return sgd_clf
+	return HOG_pipeline
 
 def main():
 	rospy.init_node('train_classifier')

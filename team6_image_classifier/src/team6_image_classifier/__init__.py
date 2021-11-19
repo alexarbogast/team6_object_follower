@@ -1,2 +1,2 @@
-from .transformers import BGR2GrayTransformer, HogTransformer
+from .transformers import BGR2GrayTransformer, HogTransformer, ResizeTransformer
 import utilities
