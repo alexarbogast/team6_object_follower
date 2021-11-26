@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import SGDClassifier
+from sklearn import svm
 from sklearn import metrics
 
 from team6_image_classifier import BGR2GrayTransformer, HogTransformer
@@ -42,7 +42,20 @@ def train_classifier(src, visualize=False):
 	if (visualize):
 		utilities.plot_train_test_bar(label_train, label_test)		
 
-	# =============== prepare ================
+	# =========== SGD Pipeline ================
+	#HOG_pipeline = Pipeline([
+	#('grayify', BGR2GrayTransformer()),
+	#('hogify', HogTransformer(
+	#	pixels_per_cell=(14, 14), 
+	#	cells_per_block=(2, 2), 
+	#	orientations=9, 
+	#	block_norm='L2-Hys')
+	#),
+	#('scalify', StandardScaler()),
+	#('classify', SGDClassifier(random_state=42, max_iter=1000, tol=1e-3))
+	#])
+
+	# ============= SVM pipeline ==============
 	HOG_pipeline = Pipeline([
 	('grayify', BGR2GrayTransformer()),
 	('hogify', HogTransformer(
@@ -52,7 +65,7 @@ def train_classifier(src, visualize=False):
 		block_norm='L2-Hys')
 	),
 	('scalify', StandardScaler()),
-	('classify', SGDClassifier(random_state=42, max_iter=1000, tol=1e-3))
+	('classify', svm.SVC(kernel='linear'))
 	])
 
 
@@ -64,7 +77,6 @@ def train_classifier(src, visualize=False):
 	#cv2.imshow('HOG', viz)
 	#cv2.waitKey(0)
 	#cv2.destroyAllWindows()
-
 
 	# =============== evaluate ================
 	predicted = HOG_pipeline.predict(data_test)
@@ -81,7 +93,7 @@ def main():
 	filepath = '/home/alex/Desktop/data'
 	trained_model = train_classifier(filepath, visualize=False)
 
-	utilities.save_model(trained_model, 'sgdclassifier.pkl')
+	utilities.save_model(trained_model, 'svmclassifier.pkl')
 
 if __name__ == '__main__':
 	try:
