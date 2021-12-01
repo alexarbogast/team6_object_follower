@@ -45,8 +45,6 @@ class ImageNode:
 		data = np.array([image])
 
 		classification = self.classifier.predict(data)
-		#feature_vector = self.feature_extractor.transform(data)
-		#classification = self.classify_client(feature_vector[0].tolist())
 		rospy.loginfo("Classified image as:   {0}".format(self.label_map[classification[0]]))
 
 

@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+############################################################
+# navigate_map node: moves the turtle bot to waypoints 
+# while navigating through map 
+############################################################
+
+import rospy
+import numpy as np
+import actionlib
+
+from itertools import cycle
+
+from geometry_msgs.msg import PoseStamped, Point, Quaternion
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from actionlib_msgs.msg import GoalStatus
+
+class Navigator:
+	def __init__(self):
+		self.move_base = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+		self.move_base.wait_for_server()
+
+	def _SetHeader(self, goal):
+		goal.target_pose.header.stamp = rospy.Time.now()
+		goal.target_pose.header.frame_id = "map"
+		return goal
+
+	def Navigate(self, waypoint):
+		current_waypoint = self._SetHeader(waypoint)
+		
+		rospy.loginfo("Current Goal:")
+		rospy.loginfo(current_waypoint)
+		
+		self.move_base.send_goal(current_waypoint)	
+		success = self.move_base.wait_for_result(rospy.Duration(60))
+		state = self.move_base.get_state()
+		
+		if success and state == GoalStatus.SUCCEEDED:
+			rospy.loginfo(self.move_base.get_goal_status_text)
+		else:
+			rospy.loginfo(self.move_base.get_goal_status_text)
+			self.move_base.cancel_goal()
+			rospy.logerr("Did not reach goal... exiting")
+		
+		return success
+
+class Waypoint2D(MoveBaseGoal):
+	def __init__(self, pos, orient):
+		waypoint = PoseStamped()
+			
+		pos = Point(pos[0], pos[1], 0)
+		orient = Quaternion(orient[3], orient[4], orient[5], orient[6])
+
+		waypoint.pose.position, self.waypoint.pose.orientation = pos, orient
+		MoveBaseGoal.__init__(target_pos=waypoint)
+
+class GridMap:
+	def __init__(self, init_pose):
+		#maxx = 3.3 maxy = 0.6
+		x = np.linspace(3.3, 0.3, 6)
+		y = np.linspace(0.6, -0.6, 3)
+
+		self.x_ind = 0
+		self.y_ind = 0
+
+
+if __name__=='__main__':
+	GridMap(5)
