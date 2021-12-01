@@ -22,7 +22,7 @@ class ImageNode:
 
 	def __init__(self):
 
-		classifier_path = rospy.get_param('~classifier', 'svmclassifier.pkl')
+		classifier_path = rospy.get_param('~classifier', 'newsvmclassifier.pkl')
 
 		if len(classifier_path) > 0 and classifier_path[0] != '/':
 			filepath = rospkg.RosPack().get_path('team6_image_classifier') + '/data/classifier/' + classifier_path

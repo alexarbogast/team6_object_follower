@@ -90,10 +90,10 @@ def train_classifier(src, visualize=False):
 def main():
 	rospy.init_node('train_classifier')
 
-	filepath = '/home/alex/Desktop/data'
-	trained_model = train_classifier(filepath, visualize=False)
+	filepath = '/home/alex/Desktop/new_images'
+	trained_model = train_classifier(filepath, visualize=True)
 
-	utilities.save_model(trained_model, 'svmclassifier.pkl')
+	utilities.save_model(trained_model, 'newsvmclassifier.pkl')
 
 if __name__ == '__main__':
 	try:
