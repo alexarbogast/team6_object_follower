@@ -5,15 +5,17 @@
 # while navigating through map 
 ############################################################
 
+from operator import index
 import rospy
 import numpy as np
 import actionlib
 
-from itertools import cycle
+from enum import Enum
 
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
+
 
 class Navigator:
 	def __init__(self):
@@ -54,15 +56,93 @@ class Waypoint2D(MoveBaseGoal):
 		waypoint.pose.position, self.waypoint.pose.orientation = pos, orient
 		MoveBaseGoal.__init__(target_pos=waypoint)
 
+
 class GridMap:
+	class Direction(Enum):
+		RIGHT, LEFT, BACKWARD, FORWARD = 0, 1, 2, 3
+
+	class Cardinal(Enum):
+		NORTH, EAST, SOUTH, WEST = 0, 1, 2, 3
+
+		def CW(cardinal):
+			return GridMap.Cardinal((cardinal.value + 1) % 4)
+
+		def CCW(cardinal):
+			return GridMap.Cardinal((cardinal.value - 1) % 4)
+
+		def BACK(cardinal):
+			return GridMap.Cardinal((cardinal.value + 2) % 4)
+
+	# cardinal2quaternion lookup table
+	# index with Cardinal (NSEW) to get Quaternion
+	squat = [(0, 0, 0, 1), 
+			 (0, 0, -0.7071068, 0.7071068),
+			 (0, 0, 1, 0),
+			 (0, 0, 0.7071068, 0.7071068)]
+
+	# maps a commanded direction + current orientation --> increments (x, y)
+	# increment_map[Direction, Cardinal]  
+	increment_map = [[( 0, 1), ( 1, 0), ( 0,-1), (-1, 0)],
+				 	 [( 0,-1), (-1, 0), ( 0, 1), ( 1, 0)], 
+				 	 [( 1, 0), ( 0,-1), (-1, 0), ( 0, 1)],
+				 	 [(-1, 0), ( 0, 1), ( 1, 0), ( 0,-1)]]
+
 	def __init__(self, init_pose):
 		#maxx = 3.3 maxy = 0.6
-		x = np.linspace(3.3, 0.3, 6)
-		y = np.linspace(0.6, -0.6, 3)
+		self.GCx = np.linspace(3.3, 0.3, 6)
+		self.GCy = np.linspace(0.6, -0.6, 3)
 
-		self.x_ind = 0
-		self.y_ind = 0
+		self.index = (0, 0)
+		self.dir = GridMap.Cardinal.SOUTH
+
+	def update_index(self, direction):
+		inc_x, inc_y = GridMap.increment_map[direction.value][self.dir.value]
+
+		potential_x, potential_y = self.index
+		potential_x += inc_x
+		potential_y += inc_y
+
+		# prevent overflow
+		if (not np.size(self.GCx) - potential_x <=0):
+			self.index = (potential_x, self.index[1])
+		if (not np.size(self.GCy) - potential_y <=0):
+			self.index = (self.index[0], potential_y)
+
+	def right(self):
+		self.update_index(GridMap.Direction.RIGHT)
+		self.dir = GridMap.Cardinal.CW(self.dir)
+
+	def left(self):
+		self.update_index(GridMap.Direction.LEFT)
+		self.dir = GridMap.Cardinal.CCW(self.dir)
+
+	def forward(self):
+		self.update_index(GridMap.Direction.FORWARD)
+
+	def backward(self):
+		self.update_index(GridMap.Direction.BACKWARD)
+		self.dir = GridMap.Cardinal.BACK(self.dir)
 
 
 if __name__=='__main__':
-	GridMap(5)
+	# create grid map
+	map = GridMap(5)
+	map.forward()
+	print(map.dir)
+	print(map.index)
+
+	map.forward()
+	print(map.dir)
+	print(map.index)
+
+	map.left()
+	print(map.dir)
+	print(map.index)
+
+	map.right()
+	print(map.dir)
+	print(map.index)
+
+	map.backward()
+	print(map.dir)
+	print(map.index)
