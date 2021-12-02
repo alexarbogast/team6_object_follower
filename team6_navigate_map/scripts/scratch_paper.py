@@ -1,7 +1,7 @@
 import numpy as np
 import rospy
 
-class LidarShizz:
+class Lidar:
 	def __init__(self):
 
 		#self._twist = Twist()

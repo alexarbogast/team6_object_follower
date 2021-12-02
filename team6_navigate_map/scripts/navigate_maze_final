@@ -123,6 +123,53 @@ class GridMap:
 		self.update_index(GridMap.Direction.BACKWARD)
 		self.dir = GridMap.Cardinal.BACK(self.dir)
 
+class Lidar:
+	def __init__(self):
+
+		#self._twist = Twist()
+		self.wall_status = 1
+
+		self.lidar_sub = rospy.Subscriber("/scan", LaserScan, self.LidarCallback, queue_size=10)
+		#self._vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
+
+	def LidarCallback(self, lidar_data):
+		pause = False
+		min_distance = self.parse_distances(lidar_data)
+		wall_status = self.check_for_wall(min_distance)
+		
+		if pause:
+			rospy.sleep(10)	
+
+	def check_for_wall(self, min_distance, distance_thresh=0.5): #is there a wall or empty block in front of us?
+		if min_distance>distance_thresh:
+			wall_status = 0 #there is not a wall in front of us
+		else:
+			wall_status = 1 #there is a wall in front of us
+
+		return wall_status
+
+	def parse_distances(self, lidar_data, heading=0):
+		HEADING_THRESH=10
+
+	#		try:
+		heading_range = np.array(range(int(heading) - HEADING_THRESH, 
+									int(heading) + HEADING_THRESH + 1))
+
+		## wrap angles
+		lidar_ang = heading_range % 360		
+		lidar_ang = (lidar_ang + 360) % 360 # force positive 
+
+		lidar_ang = [ang-360 if ang > 180 else ang for ang in lidar_ang]
+
+		dists = [lidar_data.ranges[i] for i in lidar_ang]
+		filtered_dists=[]
+		for point in dists:
+			point = 1000 if point == 0 else point
+			filtered_dists.append(point)
+
+		min_dist = np.min(filtered_dists)
+
+		return min_dist
 
 if __name__=='__main__':
 	# create grid map
