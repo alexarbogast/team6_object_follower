@@ -135,7 +135,7 @@ class Lidar:
 	def LidarCallback(self, lidar_data):
 		pause = False
 		min_distance = self.parse_distances(lidar_data)
-		wall_status = self.check_for_wall(min_distance)
+		self.wall_status = self.check_for_wall(min_distance)
 		
 		if pause:
 			rospy.sleep(10)	
