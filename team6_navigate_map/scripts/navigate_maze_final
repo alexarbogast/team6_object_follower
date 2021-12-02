@@ -74,7 +74,7 @@ class GridMap:
 			return GridMap.Cardinal((cardinal.value + 2) % 4)
 
 	# cardinal2quaternion lookup table
-	# index with Cardinal (NSEW) to get Quaternion
+	# index with Cardinal (NESW) to get Quaternion
 	card2quat = [(0, 0, 0, 1), 
 			 	 (0, 0, -0.7071068, 0.7071068),
 			 	 (0, 0, 1, 0),
@@ -87,13 +87,39 @@ class GridMap:
 				 	 [( 1, 0), ( 0,-1), (-1, 0), ( 0, 1)],
 				 	 [(-1, 0), ( 0, 1), ( 1, 0), ( 0,-1)]]
 
-	def __init__(self, init_pose):
+	def __init__(self, init_pose, init_orient):
 		#maxx = 3.3 maxy = 0.6
 		self.GCx = np.linspace(3.3, 0.3, 6)
 		self.GCy = np.linspace(0.6, -0.6, 3)
 
-		self.index = (0, 0)
-		self.dir = GridMap.Cardinal.SOUTH
+		self._localize(init_pose, init_orient)
+
+	def _localize(self, init_pose, init_orient):
+		init_pose = np.array(init_pose)
+		init_orient = np.array(init_orient)
+
+		# find location
+		(mini, minj) = (0, 0)
+		min_dist = 100
+		for i in range(np.size(self.GCx)):
+			for j in range(np.size(self.GCy)):
+				pose = np.array([self.GCx[i], self.GCy[j]])
+				
+				if np.linalg.norm(pose - init_pose) < min_dist:
+					(mini, minj) = (i, j)
+
+		self.index = (mini, minj)
+
+		# find orientation
+		mini = 0
+		min_dist = 100
+		for i in range(np.size(GridMap.card2quat)):
+			orient = np.array(GridMap.card2quat[i])
+			
+			if np.linalg.norm(orient - init_orient) < min_dist:
+				mini = i
+
+		self.dir = GridMap.Cardinal(mini)
 
 	def update_index(self, direction):
 		inc_x, inc_y = GridMap.increment_map[direction.value][self.dir.value]
@@ -176,6 +202,7 @@ class Lidar:
 		min_dist = np.min(filtered_dists)
 
 		return min_dist
+
 
 if __name__=='__main__':
 	rospy.init_node('navigate_maze_final', anonymous=False)
