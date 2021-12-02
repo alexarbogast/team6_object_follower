@@ -51,10 +51,10 @@ class Waypoint2D(MoveBaseGoal):
 		waypoint = PoseStamped()
 			
 		pos = Point(pos[0], pos[1], 0)
-		orient = Quaternion(orient[3], orient[4], orient[5], orient[6])
+		orient = Quaternion(orient[0], orient[1], orient[2], orient[3])
 
-		waypoint.pose.position, self.waypoint.pose.orientation = pos, orient
-		MoveBaseGoal.__init__(target_pos=waypoint)
+		waypoint.pose.position, waypoint.pose.orientation = pos, orient
+		self.target_pose = waypoint
 
 
 class GridMap:
@@ -75,10 +75,10 @@ class GridMap:
 
 	# cardinal2quaternion lookup table
 	# index with Cardinal (NSEW) to get Quaternion
-	squat = [(0, 0, 0, 1), 
-			 (0, 0, -0.7071068, 0.7071068),
-			 (0, 0, 1, 0),
-			 (0, 0, 0.7071068, 0.7071068)]
+	card2quat = [(0, 0, 0, 1), 
+			 	 (0, 0, -0.7071068, 0.7071068),
+			 	 (0, 0, 1, 0),
+			 	 (0, 0, 0.7071068, 0.7071068)]
 
 	# maps a commanded direction + current orientation --> increments (x, y)
 	# increment_map[Direction, Cardinal]  
@@ -108,12 +108,18 @@ class GridMap:
 		if (not np.size(self.GCy) - potential_y <=0):
 			self.index = (self.index[0], potential_y)
 
+	def globalpose(self):
+		x = self.GCx[self.index[0]]
+		y = self.GCy[self.index[1]]
+		orient = GridMap.card2quat[self.dir.value]
+		return ((x, y), orient)
+
 	def right(self):
-		self.update_index(GridMap.Direction.RIGHT)
+		#self.update_index(GridMap.Direction.RIGHT)
 		self.dir = GridMap.Cardinal.CW(self.dir)
 
 	def left(self):
-		self.update_index(GridMap.Direction.LEFT)
+		#self.update_index(GridMap.Direction.LEFT)
 		self.dir = GridMap.Cardinal.CCW(self.dir)
 
 	def forward(self):
@@ -172,24 +178,33 @@ class Lidar:
 		return min_dist
 
 if __name__=='__main__':
-	# create grid map
+	rospy.init_node('navigate_maze_final', anonymous=False)
+
+	nav = Navigator()
 	map = GridMap(5)
-	map.forward()
-	print(map.dir)
-	print(map.index)
 
-	map.forward()
-	print(map.dir)
-	print(map.index)
+	try:
+		# example series of waypoints
+		map.forward()
+		pose, orient = map.globalpose()
 
-	map.left()
-	print(map.dir)
-	print(map.index)
+		way = Waypoint2D(pose, orient)
+		rospy.loginfo("Traveling to: " + str(way.target_pose))
+		nav.Navigate(way)
 
-	map.right()
-	print(map.dir)
-	print(map.index)
+		map.left()
+		map.forward()
+		pose, orient = map.globalpose()
 
-	map.backward()
-	print(map.dir)
-	print(map.index)
+		way = Waypoint2D(pose, orient)
+		rospy.loginfo("Traveling to: " + str(way.target_pose))
+		nav.Navigate(way)
+
+		map.forward()
+		pose, orient = map.globalpose()
+
+		way = Waypoint2D(pose, orient)
+		rospy.loginfo("Traveling to: " + str(way.target_pose))
+		nav.Navigate(way)
+	except rospy.ROSInterruptException:
+		pass
