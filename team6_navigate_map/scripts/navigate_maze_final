@@ -12,9 +12,10 @@ import actionlib
 
 from enum import Enum
 
-from geometry_msgs.msg import PoseStamped, Point, Quaternion
+from geometry_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
+from rospy.client import init_node
 from sensor_msgs.msg import LaserScan
 
 class Navigator:
@@ -104,22 +105,28 @@ class GridMap:
 		for i in range(np.size(self.GCx)):
 			for j in range(np.size(self.GCy)):
 				pose = np.array([self.GCx[i], self.GCy[j]])
-				
-				if np.linalg.norm(pose - init_pose) < min_dist:
+				norm = np.linalg.norm(pose - init_pose)
+				if norm < min_dist:
 					(mini, minj) = (i, j)
+					min_dist = norm
 
 		self.index = (mini, minj)
 
 		# find orientation
 		mini = 0
 		min_dist = 100
-		for i in range(np.size(GridMap.card2quat)):
+		for i in range(len(GridMap.card2quat)):
 			orient = np.array(GridMap.card2quat[i])
 			
-			if np.linalg.norm(orient - init_orient) < min_dist:
+			norm = np.linalg.norm(orient - init_orient)
+			if norm < min_dist:
 				mini = i
+				min_dist = norm
 
 		self.dir = GridMap.Cardinal(mini)
+
+		rospy.loginfo(self.index)
+		rospy.loginfo(self.dir)
 
 	def update_index(self, direction):
 		inc_x, inc_y = GridMap.increment_map[direction.value][self.dir.value]
@@ -157,7 +164,6 @@ class GridMap:
 
 class Lidar:
 	def __init__(self):
-
 		#self._twist = Twist()
 		self.wall_status = 1
 
@@ -204,34 +210,111 @@ class Lidar:
 		return min_dist
 
 
+class Executor:
+	def __init__(self):
+		self.lidar_sub = Lidar()
+
+		# initialize map
+		current_pos = rospy.wait_for_message("/amcl_pose", PoseWithCovarianceStamped)
+		
+		initpos = current_pos.pose.pose.position
+		initorient = current_pos.pose.pose.orientation
+		
+		initpos = (initpos.x, initpos.y)
+		initorient = (initorient.x, initorient.y, initorient.z, initorient.w)
+
+		self.grid_map = GridMap(initpos, initorient)
+		print(self.grid_map.index)
+
+		# create navigator
+		self.nav = Navigator()
+		self.test()
+
+	def test(self):
+		self.grid_map.right()
+		pose, orient = self.grid_map.globalpose()
+		waypoint = Waypoint2D(pose, orient)
+
+		self.nav.Navigate(waypoint)
+		rospy.loginfo("Traveling to: {0}".format(waypoint))
+
+		self.grid_map.forward()
+		pose, orient = self.grid_map.globalpose()
+		waypoint = Waypoint2D(pose, orient)
+		
+		self.nav.Navigate(waypoint)
+		rospy.loginfo("Traveling to: {0}".format(waypoint))
+
+		self.grid_map.forward()
+		pose, orient = self.grid_map.globalpose()
+		waypoint = Waypoint2D(pose, orient)
+		
+		self.nav.Navigate(waypoint)
+		rospy.loginfo("Traveling to: {0}".format(waypoint))
+
+		self.grid_map.left()
+		pose, orient = self.grid_map.globalpose()
+		waypoint = Waypoint2D(pose, orient)
+		
+		self.nav.Navigate(waypoint)
+		rospy.loginfo("Traveling to: {0}".format(waypoint))
+
+		self.grid_map.forward()
+		pose, orient = self.grid_map.globalpose()
+		waypoint = Waypoint2D(pose, orient)
+		
+		self.nav.Navigate(waypoint)
+		rospy.loginfo("Traveling to: {0}".format(waypoint))
+		
+		
+
 if __name__=='__main__':
 	rospy.init_node('navigate_maze_final', anonymous=False)
 
-	nav = Navigator()
-	map = GridMap(5)
+
+	#nav = Navigator()
+	#map = GridMap((0.4, 0.1), (0, 0, 0.7071068, 0.7071068))
+	#pose, orient = map.globalpose()
 
 	try:
-		# example series of waypoints
-		map.forward()
-		pose, orient = map.globalpose()
+		exec_test = Executor()
 
-		way = Waypoint2D(pose, orient)
-		rospy.loginfo("Traveling to: " + str(way.target_pose))
-		nav.Navigate(way)
-
-		map.left()
-		map.forward()
-		pose, orient = map.globalpose()
-
-		way = Waypoint2D(pose, orient)
-		rospy.loginfo("Traveling to: " + str(way.target_pose))
-		nav.Navigate(way)
-
-		map.forward()
-		pose, orient = map.globalpose()
-
-		way = Waypoint2D(pose, orient)
-		rospy.loginfo("Traveling to: " + str(way.target_pose))
-		nav.Navigate(way)
+		## example series of waypoints
+		#map.right()
+		#pose, orient = map.globalpose()
+#
+		#print(pose)
+		#print(orient)
+		#way = Waypoint2D(pose, orient)
+		#rospy.loginfo("Traveling to: " + str(way.target_pose))
+		#nav.Navigate(way)
+#
+		#map.forward()
+		#pose, orient = map.globalpose()
+#
+		#way = Waypoint2D(pose, orient)
+		#rospy.loginfo("Traveling to: " + str(way.target_pose))
+		#nav.Navigate(way)
+#
+		#map.forward()
+		#pose, orient = map.globalpose()
+#
+		#way = Waypoint2D(pose, orient)
+		#rospy.loginfo("Traveling to: " + str(way.target_pose))
+		#nav.Navigate(way)
+#
+		#map.right()
+		#pose, orient = map.globalpose()
+#
+		#way = Waypoint2D(pose, orient)
+		#rospy.loginfo("Traveling to: " + str(way.target_pose))
+		#nav.Navigate(way)
+#
+		#map.left()
+		#pose, orient = map.globalpose()
+#
+		#way = Waypoint2D(pose, orient)
+		#rospy.loginfo("Traveling to: " + str(way.target_pose))
+		#nav.Navigate(way)
 	except rospy.ROSInterruptException:
 		pass

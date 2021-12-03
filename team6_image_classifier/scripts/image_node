@@ -4,11 +4,15 @@ import rospy
 import rospkg
 import numpy as np
 from cv_bridge import CvBridge
+
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Byte
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
+
+from scipy import stats
 
 
 from team6_image_classifier.srv import Classify
@@ -20,7 +24,9 @@ from matplotlib import pyplot as plt
 
 class ImageNode:
 
-	def __init__(self):
+	def __init__(self, memory_len):
+
+		self.memory = [0] * memory_len
 
 		classifier_path = rospy.get_param('~classifier', 'newsvmclassifier.pkl')
 
@@ -35,24 +41,37 @@ class ImageNode:
 		
 		self.bridge = CvBridge()
 		self.image_subscriber = rospy.Subscriber('/raspicam_node/image/compressed', CompressedImage, self.ImageCallback, queue_size=10)
-		
-		print('Waiting for classifier service to come up...')
-		rospy.wait_for_service('/classifier_node/classify')
-		self.classify_client = rospy.ServiceProxy('/classifier_node/classify', Classify)
+		self.classify_client = rospy.Publisher('/classified_image', Byte)
 
 	def ImageCallback(self, data):
 		image = np.array(self.bridge.compressed_imgmsg_to_cv2(data, "bgr8"))
 		data = np.array([image])
 
-		classification = self.classifier.predict(data)
-		rospy.loginfo("Classified image as:   {0}".format(self.label_map[classification[0]]))
+		#classification = self.classifier.predict(data)
+		#rospy.loginfo("Classified image as:   {0}".format(self.label_map[classification[0]]))
+
+		# publish result
+		result = self.classifier.predict(data)
+		self.AppendClassification(result)
+
+		classification = Byte()
+		strongest_class, _  = stats.mode(self.memory)
+		print(strongest_class)
+		self.classify_client.publish(Byte(strongest_class))
+
+	def mode(self, list):
+		return max(set(list), key = list.count)
+
+	def AppendClassification(self, classification):
+		self.memory.pop(0)
+		self.memory.append(classification)
 
 
 if __name__=="__main__":
 	rospy.init_node('image_node', anonymous=False)
 	
 	try:
-		image_node = ImageNode()
+		image_node = ImageNode(15)
 
 		rospy.loginfo('Image node initialized')
 		rospy.spin()
