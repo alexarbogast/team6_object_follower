@@ -17,6 +17,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 from rospy.client import init_node
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Byte
 
 class Navigator:
 	def __init__(self):
@@ -125,8 +126,8 @@ class GridMap:
 
 		self.dir = GridMap.Cardinal(mini)
 
-		rospy.loginfo(self.index)
-		rospy.loginfo(self.dir)
+		#rospy.loginfo(self.index)
+		#rospy.loginfo(self.dir)
 
 	def update_index(self, direction):
 		inc_x, inc_y = GridMap.increment_map[direction.value][self.dir.value]
@@ -226,9 +227,46 @@ class Executor:
 		self.grid_map = GridMap(initpos, initorient)
 		print(self.grid_map.index)
 
+		self.label_map = {0: 'empty_wall', 1: 'left', 2: 'right',
+						  3: 'do not enter', 4: 'stop', 5: 'goal'}
+
 		# create navigator
 		self.nav = Navigator()
-		self.test()
+
+	def execute(self):
+		# check for wall
+		if not self.lidar_sub.wall_status: # no wall
+			self.grid_map.forward()
+			pose, orient = self.grid_map.globalpose()
+			waypoint = Waypoint2D(pose, orient)
+
+		else:
+			rospy.sleep(1)
+			sign_type = rospy.wait_for_message('/classified_image', Byte)
+			sign_type = self.label_map[sign_type.data]
+
+			rospy.loginfo(sign_type)
+
+			if (sign_type == 'empty_wall'): 	 # try again next iteration
+				rospy.loginfo('YOU SUCK')
+				waypoint = None
+			else:								 # we found a sign
+				if (sign_type == 'right'):
+					self.grid_map.right()
+				elif (sign_type == 'left'):
+					self.grid_map.left()
+				elif (sign_type == 'do not enter'):
+					self.grid_map.backward()
+				elif (sign_type == 'stop'):
+					self.grid_map.backward()
+				elif (sign_type == 'goal'):
+					rospy.loginfo('YOU DONT SUCK')
+
+				pose, orient = self.grid_map.globalpose()
+				waypoint = Waypoint2D(pose, orient)
+		
+		if not waypoint == None:
+			self.nav.Navigate(waypoint)
 
 	def test(self):
 		self.grid_map.right()
@@ -279,42 +317,8 @@ if __name__=='__main__':
 	try:
 		exec_test = Executor()
 
-		## example series of waypoints
-		#map.right()
-		#pose, orient = map.globalpose()
-#
-		#print(pose)
-		#print(orient)
-		#way = Waypoint2D(pose, orient)
-		#rospy.loginfo("Traveling to: " + str(way.target_pose))
-		#nav.Navigate(way)
-#
-		#map.forward()
-		#pose, orient = map.globalpose()
-#
-		#way = Waypoint2D(pose, orient)
-		#rospy.loginfo("Traveling to: " + str(way.target_pose))
-		#nav.Navigate(way)
-#
-		#map.forward()
-		#pose, orient = map.globalpose()
-#
-		#way = Waypoint2D(pose, orient)
-		#rospy.loginfo("Traveling to: " + str(way.target_pose))
-		#nav.Navigate(way)
-#
-		#map.right()
-		#pose, orient = map.globalpose()
-#
-		#way = Waypoint2D(pose, orient)
-		#rospy.loginfo("Traveling to: " + str(way.target_pose))
-		#nav.Navigate(way)
-#
-		#map.left()
-		#pose, orient = map.globalpose()
-#
-		#way = Waypoint2D(pose, orient)
-		#rospy.loginfo("Traveling to: " + str(way.target_pose))
-		#nav.Navigate(way)
+		while (not rospy.is_shutdown()):
+			exec_test.execute()
+
 	except rospy.ROSInterruptException:
 		pass
