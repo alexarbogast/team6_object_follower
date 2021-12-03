@@ -5,7 +5,7 @@ class Lidar:
 	def __init__(self):
 
 		#self._twist = Twist()
-		self.wall_status = 1
+		self.wall_status = 1 # 1 means there is a wall in front of us. 0 means there is no wall.
 
 		self.lidar_sub = rospy.Subscriber("/scan", LaserScan, self.LidarCallback, queue_size=10)
 		#self._vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
