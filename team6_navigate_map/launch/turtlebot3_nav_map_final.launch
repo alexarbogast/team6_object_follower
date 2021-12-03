@@ -1,0 +1,4 @@
+<launch>
+    <node name="classifier_node" type="classifier_node.py" pkg="team6_image_classifier"/>
+    <node name="navigate_maze_final" type="navigate_maze_final.py" pkg="team6_navigate_map" output="screen"//>
+</launch>
