@@ -41,7 +41,7 @@ class ImageNode:
 		
 		self.bridge = CvBridge()
 		self.image_subscriber = rospy.Subscriber('/raspicam_node/image/compressed', CompressedImage, self.ImageCallback, queue_size=10)
-		self.classify_client = rospy.Publisher('/classified_image', Byte)
+		self.classify_client = rospy.Publisher('/classified_image', Byte, queue_size=5)
 
 	def ImageCallback(self, data):
 		image = np.array(self.bridge.compressed_imgmsg_to_cv2(data, "bgr8"))
