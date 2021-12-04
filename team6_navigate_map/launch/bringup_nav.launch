@@ -1,5 +1,5 @@
 <launch>
-    <arg name="map_file" default="$(find team6_navigate_map)/maps/7785_final_real.yaml"/>
+    <arg name="map_file" default="$(find team6_navigate_map)/maps/mappyboy.yaml"/>
 
     <!-- launch navigation -->
     <include file="$(find turtlebot3_navigation)/launch/turtlebot3_navigation.launch">
