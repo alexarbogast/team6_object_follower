@@ -142,7 +142,7 @@ class NavController:
 
 			heading = np.arctan2(target_position.y, target_position.x)
 
-			if error_mag > 3*self.pos_tol:
+			if error_mag > 1.5*self.pos_tol:
 				ang_vel = self.ang_controller.Calculate(0.01, heading, 0)
 			else:
 				ang_vel = 0
@@ -394,15 +394,17 @@ class Executor:
 
 	def execute(self):
 
-		rospy.sleep(0.5)
 		# check for wall
+		rospy.sleep(1)
 		if not self.lidar_sub.wall_status: # no wall
 			self.grid_map.forward()
 			pose, orient = self.grid_map.globalpose()
 			waypoint = Waypoint2D(pose, orient)
 
+			rospy.loginfo("============= Searching for sign ==============")
+
 		else:
-			rospy.sleep(5)
+			rospy.sleep(3)
 			sign_type = rospy.wait_for_message('/classified_image', Byte)
 			sign_type = self.label_map[sign_type.data]
 
