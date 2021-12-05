@@ -68,8 +68,8 @@ class NavController:
 		self.tf_listener.waitForTransform('/map','/base_link',rospy.Time(), rospy.Duration(4.0))
 
 		# create controllers
-		self.ang_controller = PID(1.7, 0, 0, ang_vel_min_max[1], ang_vel_min_max[0])
-		self.lin_controller = PID(1.5, 0, 0, lin_vel_min_max[1], lin_vel_min_max[0])
+		self.ang_controller = PID(1.6, 0, 0, ang_vel_min_max[1], ang_vel_min_max[0])
+		self.lin_controller = PID(1.7, 0, 0, lin_vel_min_max[1], lin_vel_min_max[0])
 
 		self.current_lin_vel = 0
 		self.lin_accel = 0.005
@@ -138,10 +138,15 @@ class NavController:
 		while (error_mag > self.pos_tol):	
 			target_pos_local = self.transform2local(waypoint)
 			target_position = target_pos_local.pose.position
+			error_mag = np.sqrt(target_position.x**2 + target_position.y**2)
 
 			heading = np.arctan2(target_position.y, target_position.x)
 
-			ang_vel = self.ang_controller.Calculate(0.01, heading, 0)
+			if error_mag > 3*self.pos_tol:
+				ang_vel = self.ang_controller.Calculate(0.01, heading, 0)
+			else:
+				ang_vel = 0
+			
 			lin_vel = self.lin_controller.Calculate(0.01, target_position.x, 0)
 
 			control_output.angular.z = ang_vel
@@ -151,7 +156,6 @@ class NavController:
 			self.current_lin_vel = lin_vel
 			self.cmd_vel_pub.publish(control_output)
 			
-			error_mag = np.sqrt(target_position.x**2 + target_position.y**2)
 			self.rate.sleep()
 
 		control_output.angular.z, control_output.linear.x = 0, 0
@@ -390,7 +394,7 @@ class Executor:
 
 	def execute(self):
 
-		rospy.sleep(1)
+		rospy.sleep(0.5)
 		# check for wall
 		if not self.lidar_sub.wall_status: # no wall
 			self.grid_map.forward()
@@ -427,7 +431,7 @@ class Executor:
 		if not waypoint == None:
 			self.nav.Navigate(waypoint)
 		
-		return self.goals_found > 4
+		return self.goals_found > 3
 		
 		
 if __name__=='__main__':
@@ -440,7 +444,7 @@ if __name__=='__main__':
 			goal_found = exec_test.execute()
 
 			if goal_found:
-				continue
+				break
 
 	except rospy.ROSInterruptException:
 		pass
