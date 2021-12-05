@@ -27,154 +27,7 @@ from pid import PID
 BURGER_MAX_ANG_VEL = 2.84
 BURGER_MAX_LIN_VEL = 0.2
 
-class NavController:
-	def __init__(self, pos_tol, yaw_tol, ang_vel_min_max, lin_vel_min_max):
-		self.pos_tol, self.yaw_tol = pos_tol, yaw_tol
 		
-		# amcl subscription
-		self.global_pose = PoseStamped()
-		self.amcl_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.amcl_callback)
-		rospy.wait_for_message("/amcl_pose", PoseWithCovarianceStamped)
-
-		# transform
-		self.tf_buffer = Buffer()
-		self.tf_listener = tf.TransformListener(self.tf_buffer)
-		self.tf_listener.waitForTransform('/map','/base_link',rospy.Time(), rospy.Duration(4.0))
-
-		# create controllers
-		self.ang_controller = PID(1.7, 0, 0, ang_vel_min_max[1], ang_vel_min_max[0])
-		self.lin_controller = PID(0.8, 0, 0, lin_vel_min_max[1], lin_vel_min_max[0])
-
-		self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
-
-
-	def amcl_callback(self, amcl):
-		self.global_pose.header = amcl.header 
-		self.global_pose.pose = amcl.pose.pose
-	
-	def transform2local(self, waypoint):
-		result = PoseStamped()
-
-		# extract global position data
-		wp_global_position = waypoint.target_pose.pose.position
-		turtle_global_position = self.global_pose.pose.position
-
-		wp_global_position = np.array([wp_global_position.x, wp_global_position.y, wp_global_position.z])
-		turtle_global_position = np.array([turtle_global_position.x, turtle_global_position.y, turtle_global_position.z])
-
-		# extract global orientation data 
-		wp_orient = waypoint.target_pose.pose.orientation
-		turtle_orient = self.global_pose.pose.orientation
-
-		wp_orient = [wp_orient.x, wp_orient.y, wp_orient.z, wp_orient.w]
-		turtle_orient = [turtle_orient.x, turtle_orient.y, turtle_orient.z, turtle_orient.w]
-
-		# transform
-		rot_mat = quaternion_matrix(turtle_orient)
-		trans_mat = translation_matrix(turtle_global_position)
-		rob_mat = concatenate_matrices(trans_mat, rot_mat)
-
-		foo = np.append(wp_global_position, 1)
-		trans = np.dot(np.linalg.inv(rob_mat), np.transpose(foo))[0:3]
-
-		# find waypoint orientation in rob frame
-		inv_rob_quat = quaternion_conjugate(turtle_orient)
-		new_quat = quaternion_multiply(inv_rob_quat, wp_orient)
-
-		result.pose.position = Point(x=trans[0], y=trans[1], z=trans[2])
-		result.pose.orientation = Quaternion(x=new_quat[0], y=new_quat[1], z=new_quat[2], w=new_quat[3])
-
-		return result
-
-	def transform2localv2(self, waypoint):	
-		waypoint.target_pose.header.frame_id = '/map'
-		waypoint.target_pose.header.stamp = rospy.Time(0)
-
-		transformed = self.tf_listener.transformPose('/base_footprint', waypoint.target_pose)
-		print(transformed)
-		return transformed	
-			
-	
-	def ControlHeading(self, waypoint):
-		heading_thresh = 0.035 # rad
-		heading_met = False
-
-		control_output = Twist()
-		while (not heading_met):
-			target_pos_local = self.transform2localv2(waypoint)
-			target_position = target_pos_local.pose.position
-			print(target_position)
-
-			heading = np.arctan2(target_position.y, target_position.x)
-
-			ang_vel = self.ang_controller.Calculate(0.1, heading, 0)
-			lin_vel = 0
-
-			control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
-			self.cmd_vel_pub.publish(control_output)
-			heading_met = True if abs(heading) < self.yaw_tol else False
-
-		control_output.angular.z, control_output.linear.x = 0, 0
-		self.cmd_vel_pub.publish(control_output)
-
-	def ControlPosition(self, waypoint):
-		position_met = False
-
-		control_output = Twist()
-		while (not position_met):
-			target_pos_local = self.transform2localv2(waypoint)
-			target_position = target_pos_local.pose.position
-			error_mag = np.sqrt(target_position.x**2 + target_position.y**2)
-
-			heading = np.arctan2(target_position.y, target_position.x)
-			
-			if error_mag > 2*self.pos_tol:
-				ang_vel = self.ang_controller.Calculate(0.01, heading, 0)
-			else:
-				ang_vel = 0
-			
-			lin_vel = self.lin_controller.Calculate(0.01, target_position.x, 0)
-
-			control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
-			self.cmd_vel_pub.publish(control_output)
-
-			position_met = True if error_mag < self.pos_tol else False
-
-		control_output.angular.z, control_output.linear.x = 0, 0
-		self.cmd_vel_pub.publish(control_output)
-
-	def ControlOrient(self, waypoint):
-		orient_met = False
-
-		control_output = Twist()
-		while (not orient_met):
-			target_pos_local = self.transform2localv2(waypoint)
-			target_orient = target_pos_local.pose.orientation
-			quat = np.array([target_orient.x, target_orient.y, target_orient.z, target_orient.w])
-			
-			[_, _, yaw] = euler_from_quaternion(quat)
-
-			ang_vel = self.ang_controller.Calculate(0.01, yaw, 0)
-			lin_vel = 0
-
-			control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
-			self.cmd_vel_pub.publish(control_output)
-
-			orient_met = True if abs(yaw) < self.yaw_tol else False
-
-		control_output.angular.z, control_output.linear.x = 0, 0
-		self.cmd_vel_pub.publish(control_output)
-
-
-	def Navigate(self, waypoint):
-		#position_met, orient_met = False, False 
-
-		self.ControlHeading(waypoint)
-		self.ControlPosition(waypoint)
-		self.ControlOrient(waypoint)
-
-		
-
 class Navigator:
 	def __init__(self):
 		self.move_base = actionlib.SimpleActionClient('move_base', MoveBaseAction)
@@ -203,6 +56,148 @@ class Navigator:
 			rospy.logerr("Did not reach goal... exiting")
 		
 		return success
+
+class NavController:
+	def __init__(self, pos_tol, yaw_tol, ang_vel_min_max, lin_vel_min_max):
+		self.pos_tol, self.yaw_tol = pos_tol, yaw_tol
+		self.lin_vel_min_max = lin_vel_min_max
+		
+		# transform
+		self.tf_buffer = Buffer()
+		self.tf_listener = tf.TransformListener(self.tf_buffer)
+		self.tf_listener.waitForTransform('/map','/base_link',rospy.Time(), rospy.Duration(4.0))
+
+		# create controllers
+		self.ang_controller = PID(1.7, 0, 0, ang_vel_min_max[1], ang_vel_min_max[0])
+		self.lin_controller = PID(1.5, 0, 0, lin_vel_min_max[1], lin_vel_min_max[0])
+
+		self.current_lin_vel = 0
+		self.lin_accel = 0.005
+		self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
+
+		self.rate = rospy.Rate(20)
+
+	def transform2local(self, waypoint):	
+		waypoint.target_pose.header.frame_id = '/map'
+		waypoint.target_pose.header.stamp = rospy.Time(0)
+
+		transformed = self.tf_listener.transformPose('/base_footprint', waypoint.target_pose)
+		return transformed	
+			
+	def create_profile(self, new_vel):
+		current = self.current_lin_vel
+
+		accel = new_vel - current
+		out = new_vel
+		
+		if accel > 0:
+			if accel > self.lin_accel:
+				out = current + self.lin_accel
+
+		return out
+
+	def wrap_angles(self, angle):
+		# wrap between [-pi, pi]
+		pi_2 = 2*np.pi
+		angle = math.fmod(math.fmod(angle, pi_2) + pi_2, pi_2) 
+
+		if angle > np.pi:
+			angle -= 2*np.pi
+
+		return angle
+	
+	def ControlHeading(self, waypoint):
+		target_pos_local = self.transform2local(waypoint)
+		target_position = target_pos_local.pose.position
+		heading = np.arctan2(target_position.y, target_position.x)
+
+		control_output = Twist()
+		while (abs(heading) > self.yaw_tol):
+			target_pos_local = self.transform2local(waypoint)
+			target_position = target_pos_local.pose.position
+			heading = np.arctan2(target_position.y, target_position.x)
+			
+			ang_vel = self.ang_controller.Calculate(0.1, heading, 0)
+			lin_vel = 0
+
+			control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
+			self.cmd_vel_pub.publish(control_output)
+
+			self.rate.sleep()
+
+		control_output.angular.z, control_output.linear.x = 0, 0
+		self.cmd_vel_pub.publish(control_output)
+
+	def ControlPosition(self, waypoint):
+		target_pos_local = self.transform2local(waypoint)
+		target_position = target_pos_local.pose.position
+		error_mag = np.sqrt(target_position.x**2 + target_position.y**2)
+		heading = np.arctan2(target_position.y, target_position.x)
+
+		control_output = Twist()
+		while (error_mag > self.pos_tol):	
+			target_pos_local = self.transform2local(waypoint)
+			target_position = target_pos_local.pose.position
+
+			heading = np.arctan2(target_position.y, target_position.x)
+
+			ang_vel = self.ang_controller.Calculate(0.01, heading, 0)
+			lin_vel = self.lin_controller.Calculate(0.01, target_position.x, 0)
+
+			control_output.angular.z = ang_vel
+			lin_vel =  self.create_profile(lin_vel)
+
+			control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
+			self.current_lin_vel = lin_vel
+			self.cmd_vel_pub.publish(control_output)
+			
+			error_mag = np.sqrt(target_position.x**2 + target_position.y**2)
+			self.rate.sleep()
+
+		control_output.angular.z, control_output.linear.x = 0, 0
+		self.current_lin_vel = 0
+		self.cmd_vel_pub.publish(control_output)
+
+	def ControlOrient(self, waypoint):
+		target_pos_local = self.transform2local(waypoint)
+		target_orient = target_pos_local.pose.orientation
+		quat = np.array([target_orient.x, target_orient.y, target_orient.z, target_orient.w])
+	
+		[_, _, yaw] = euler_from_quaternion(quat)
+		yaw = self.wrap_angles(yaw)
+
+		control_output = Twist()
+		while (abs(yaw) > self.yaw_tol):
+			target_pos_local = self.transform2local(waypoint)
+			target_orient = target_pos_local.pose.orientation
+			quat = np.array([target_orient.x, target_orient.y, target_orient.z, target_orient.w])
+			
+			[_, _, yaw] = euler_from_quaternion(quat)
+			yaw = self.wrap_angles(yaw)
+			
+			ang_vel = self.ang_controller.Calculate(0.01, yaw, 0)
+			lin_vel = 0
+
+			control_output.angular.z, control_output.linear.x = ang_vel, lin_vel
+			self.cmd_vel_pub.publish(control_output)
+
+			self.rate.sleep()
+
+		control_output.angular.z, control_output.linear.x = 0, 0
+		self.cmd_vel_pub.publish(control_output)
+
+	def Navigate(self, waypoint):	
+		rospy.loginfo("Current Goal:")
+		rospy.loginfo(waypoint)
+
+		target= self.transform2local(waypoint)
+		error_mag = np.sqrt(target.pose.position.x**2 + target.pose.position.y**2)
+		if (error_mag > 3*self.pos_tol):
+			self.ControlHeading(waypoint)
+			self.ControlPosition(waypoint)
+
+		self.ControlOrient(waypoint)
+
 
 class Waypoint2D(MoveBaseGoal):
 	def __init__(self, pos, orient):
@@ -247,7 +242,7 @@ class GridMap:
 	def __init__(self, init_pose, init_orient):
 		#maxx = 3.3 maxy = 0.6
 		self.GCx = np.linspace(3.3, 0.3, 6)
-		self.GCy = np.linspace(0.6, -0.6, 3)
+		self.GCy = np.linspace(0.6133, -0.6133, 3)
 		#self.GCx = np.linspace(3.7, -0.75, 6)
 		#self.GCy = np.linspace(0.9, -1, 3)
 
@@ -386,7 +381,9 @@ class Executor:
 		# create navigator
 		ang_vel_min_max = (-BURGER_MAX_ANG_VEL, BURGER_MAX_ANG_VEL)
 		lin_vel_min_max = (-BURGER_MAX_LIN_VEL, BURGER_MAX_LIN_VEL)
-		self.nav = NavController(0.01, 0.034, ang_vel_min_max, lin_vel_min_max)
+		self.nav = NavController(0.02, 0.034, ang_vel_min_max, lin_vel_min_max)
+
+		self.goals_found = 0
 
 	def execute(self):
 		# check for wall
@@ -413,37 +410,32 @@ class Executor:
 					self.grid_map.backward()
 				elif (sign_type == 'stop'):
 					self.grid_map.backward()
-				elif (sign_type == 'goal'):
-					rospy.loginfo('YOU DONT SUCK')
 
 				pose, orient = self.grid_map.globalpose()
 				waypoint = Waypoint2D(pose, orient)
+
+				if (sign_type == 'goal'):
+					waypoint = None
+					self.goals_found += 1
+					rospy.loginfo('YOU DONT SUCK')
 		
 		if not waypoint == None:
 			self.nav.Navigate(waypoint)
+		
+		return self.goals_found > 4
 		
 		
 if __name__=='__main__':
 	rospy.init_node('navigate_maze_final', anonymous=False)
 
-	#pos = (0.9, 0.0)
-	#orient = (0, 0, 0, 1)
-
-	#waypoint = Waypoint2D(pos, orient)
-
 	try:
-		#ang_vel_min_max = (-BURGER_MAX_ANG_VEL, BURGER_MAX_ANG_VEL)
-		#lin_vel_min_max = (-BURGER_MAX_LIN_VEL, BURGER_MAX_LIN_VEL)
-
-		#test = NavController(0.01, 0.034, ang_vel_min_max, lin_vel_min_max)
-		
-		#while (not rospy.is_shutdown()):
-		#test.Navigate(waypoint)
-
 		exec_test = Executor()
 
 		while (not rospy.is_shutdown()):
-			exec_test.execute()
+			goal_found = exec_test.execute()
+
+			if goal_found:
+				continue
 
 	except rospy.ROSInterruptException:
 		pass
